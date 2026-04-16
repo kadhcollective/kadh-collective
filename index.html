@@ -1561,7 +1561,7 @@
      Replace these two values with your own from:
      Supabase Dashboard → Settings → API
   ─────────────────────────────────────────────── */
-  const SUPABASE_URL = 'https://nlgavsmgnxrkrwbyonxr.supabase.co'
+  const SUPABASE_URL = 'https://sb_publishable_sXXB1qVde1OhkgTSUjBvDg_l3a6qBi6.supabase.co'
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sZ2F2c21nbnhya3J3YnlvbnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4OTMxMTEsImV4cCI6MjA5MTQ2OTExMX0.PYvtT10ActDoI8l311LNNT7TeutDg514opepoJGqoHk'
 
   // Create Supabase client
@@ -1724,7 +1724,7 @@
     try {
       const { data, error } = await db
         .from('products')
-        .select('id, name, description, price, image_url, images, badge, in_stock, length, sleeve, created_at')
+        .select('id, name, description, short_description, price, image_url, images, badge, in_stock, length, sleeve, created_at')
         .eq('in_stock', true)
         .order('created_at', { ascending: false })
 
@@ -1765,7 +1765,7 @@
         </div>
         <div class="product-info">
           <div class="product-name">${p.name}</div>
-          <div class="product-desc">${p.description || ''}</div>
+          <div class="product-desc">${p.short_description || p.description || ''}</div>
           <div class="product-footer">
             <div class="product-price">${fmt(p.price)}</div>
             <button class="add-btn" onclick="event.stopPropagation(); addToCart(${p.id}, '${p.name.replace(/'/g,"\\'")}', ${p.price}, '${imgs[0] || ''}')">Add to Bag</button>
@@ -2092,7 +2092,7 @@
           </div>
           <div class="product-info">
             <div class="product-name">${p.name}</div>
-            <div class="product-desc">${p.description || ''}</div>
+            <div class="product-desc">${p.short_description || p.description || ''}</div>
             <div class="product-footer">
               <div class="product-price">${fmt(p.price)}</div>
               <button class="add-btn" onclick="event.stopPropagation(); addToCart(${p.id}, '${p.name.replace(/'/g,"\\'")}', ${p.price}, '${imgs[0] || ''}')">Add to Bag</button>
@@ -2107,10 +2107,10 @@
      Remove this once your Supabase keys are added
   ─────────────────────────────────────────────── */
   const DEMO_PRODUCTS = [
-    { id: 1, name: 'Sahara Abaya',   description: 'Relaxed cardigan cut in premium linen blend', price: 280, image_url: '', images: [], badge: 'Bestseller', in_stock: true, length: '145 cm', sleeve: '60 cm' },
-    { id: 2, name: 'Nuora Abaya',    description: 'Fluid crepe with delicate front pleat detail', price: 195, image_url: '', images: [], badge: '',           in_stock: true, length: '143 cm', sleeve: '58 cm' },
-    { id: 3, name: 'Hilya Abaya',    description: 'Structured shoulder with modest A-line silhouette', price: 199, image_url: '', images: [], badge: 'New',  in_stock: true, length: '148 cm', sleeve: '61 cm' },
-    { id: 4, name: 'Nashmiya Abaya', description: 'Lightweight chiffon layer for warm evenings', price: 175, image_url: '', images: [], badge: '',            in_stock: true, length: '142 cm', sleeve: '57 cm' },
+    { id: 1, name: 'Sahara Abaya',   short_description: 'Relaxed linen blend, effortless all day.', description: 'Relaxed cardigan cut in premium linen blend. The Sahara Abaya is designed for the modern Muslim woman who values both comfort and elegance. Its breathable fabric drapes beautifully and moves with you from morning prayers to evening gatherings.', price: 280, image_url: '', images: [], badge: 'Bestseller', in_stock: true, length: '145 cm', sleeve: '60 cm' },
+    { id: 2, name: 'Nuora Abaya',    short_description: 'Fluid crepe with a delicate pleat.',        description: 'Fluid crepe with delicate front pleat detail. The Nuora Abaya balances structure and softness — a subtle pleat at the front adds quiet sophistication without weight. Perfect for occasions that call for understated refinement.', price: 195, image_url: '', images: [], badge: '',           in_stock: true, length: '143 cm', sleeve: '58 cm' },
+    { id: 3, name: 'Hilya Abaya',    short_description: 'Structured shoulder, modest A-line.',       description: 'Structured shoulder with modest A-line silhouette. The Hilya Abaya draws its inspiration from classic modest tailoring, updated with a clean shoulder line and a graceful A-line hem. A statement piece that never shouts.', price: 199, image_url: '', images: [], badge: 'New',  in_stock: true, length: '148 cm', sleeve: '61 cm' },
+    { id: 4, name: 'Nashmiya Abaya', short_description: 'Lightweight chiffon for warm evenings.',   description: 'Lightweight chiffon layer for warm evenings. The Nashmiya Abaya is your companion for long, warm days — a featherlight outer layer that floats with every step. Pairs beautifully over any modest base for effortless layering.', price: 175, image_url: '', images: [], badge: '',            in_stock: true, length: '142 cm', sleeve: '57 cm' },
   ]
 
   /* ─────────────────────────────────────────────
