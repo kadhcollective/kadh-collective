@@ -714,6 +714,271 @@
       .checkout-wrap { padding: 2rem 1rem; }
       .cart-wrap { padding: 2rem 1rem; }
     }
+
+    /* ─── PRODUCT DETAIL PAGE ──────────────────── */
+    .pdp-wrap { background: var(--cream); padding: 2.5rem 2rem 4rem; flex: 1; }
+    .pdp-container { max-width: 1100px; margin: 0 auto; }
+
+    .pdp-breadcrumb {
+      font-size: .72rem;
+      letter-spacing: .08em;
+      color: var(--mid);
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .pdp-breadcrumb a { cursor: pointer; transition: color var(--transition); }
+    .pdp-breadcrumb a:hover { color: var(--gold); }
+    .pdp-breadcrumb span { color: var(--sand); }
+
+    .pdp-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+
+    /* Gallery */
+    .pdp-gallery { position: sticky; top: 80px; }
+
+    .pdp-main-img {
+      aspect-ratio: 3/4;
+      background: var(--soft);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-bottom: 1rem;
+      position: relative;
+    }
+    .pdp-main-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: opacity .25s ease;
+    }
+    .pdp-main-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pdp-thumbs {
+      display: flex;
+      gap: .65rem;
+      flex-wrap: wrap;
+    }
+    .pdp-thumb {
+      width: 72px;
+      height: 96px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: border-color var(--transition);
+      background: var(--soft);
+      flex-shrink: 0;
+    }
+    .pdp-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .pdp-thumb.active { border-color: var(--gold); }
+    .pdp-thumb-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Info panel */
+    .pdp-info { padding-top: .5rem; }
+
+    .pdp-badge-row { display: flex; gap: .5rem; margin-bottom: 1rem; }
+    .pdp-badge {
+      background: var(--dark);
+      color: var(--cream);
+      font-size: .62rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+    }
+
+    .pdp-name {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3vw, 2.5rem);
+      font-weight: 300;
+      line-height: 1.15;
+      margin-bottom: .5rem;
+    }
+    .pdp-price {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--dark);
+      margin-bottom: 1.5rem;
+    }
+    .pdp-description {
+      font-size: .88rem;
+      color: var(--mid);
+      line-height: 1.85;
+      margin-bottom: 2rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--sand);
+    }
+
+    /* Size & measurements */
+    .pdp-section-label {
+      font-size: .68rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1rem;
+    }
+
+    .pdp-size-note {
+      background: var(--soft);
+      border-left: 2px solid var(--gold);
+      padding: .85rem 1rem;
+      font-size: .82rem;
+      color: var(--mid);
+      line-height: 1.7;
+      margin-bottom: 1.2rem;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .pdp-measurements {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .65rem;
+      margin-bottom: 1.5rem;
+    }
+    .pdp-meas-item {
+      background: var(--soft);
+      border: 1px solid var(--sand);
+      border-radius: var(--radius-md);
+      padding: .9rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .25rem;
+    }
+    .pdp-meas-label { font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--mid); }
+    .pdp-meas-value { font-family: var(--font-display); font-size: 1.2rem; font-weight: 400; color: var(--dark); }
+
+    /* Size guide toggle */
+    .pdp-size-guide-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: 1px solid var(--sand);
+      font-family: var(--font-body);
+      font-size: .74rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--mid);
+      padding: 9px 16px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition);
+      margin-bottom: 1.5rem;
+    }
+    .pdp-size-guide-toggle:hover { border-color: var(--gold); color: var(--gold); }
+
+    .pdp-size-guide {
+      background: var(--soft);
+      border: 1px solid var(--sand);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      display: none;
+    }
+    .pdp-size-guide.open { display: block; }
+    .pdp-size-guide-title {
+      font-size: .72rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1rem;
+    }
+    .pdp-size-guide-diagram {
+      display: flex;
+      gap: 2rem;
+      align-items: flex-start;
+    }
+    .pdp-size-guide-svg { flex-shrink: 0; }
+    .pdp-size-guide-steps { flex: 1; }
+    .pdp-size-step {
+      display: flex;
+      gap: .75rem;
+      margin-bottom: .85rem;
+      align-items: flex-start;
+    }
+    .pdp-step-num {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: #fff;
+      font-size: .65rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .pdp-step-text { font-size: .8rem; color: var(--mid); line-height: 1.65; }
+    .pdp-step-text strong { color: var(--dark); font-weight: 500; }
+
+    /* Add to bag */
+    .pdp-add-btn {
+      width: 100%;
+      background: var(--dark);
+      color: var(--cream);
+      border: none;
+      padding: 16px 32px;
+      font-size: .82rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      font-family: var(--font-body);
+      transition: background var(--transition);
+      border-radius: var(--radius-sm);
+      margin-bottom: 2rem;
+    }
+    .pdp-add-btn:hover { background: var(--gold); }
+
+    .pdp-trust {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--sand);
+    }
+    .pdp-trust-item { display: flex; align-items: center; gap: 8px; font-size: .78rem; color: var(--mid); }
+    .pdp-trust-icon { width: 14px; height: 14px; stroke: var(--gold); stroke-width: 1.5; fill: none; flex-shrink: 0; }
+
+    /* You may also like */
+    .pdp-related { padding: 3rem 2rem 4rem; background: var(--soft); }
+    .pdp-related-inner { max-width: 1100px; margin: 0 auto; }
+    .pdp-related-header { margin-bottom: 2rem; }
+    .pdp-related-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* Responsive PDP */
+    @media (max-width: 860px) {
+      .pdp-layout { grid-template-columns: 1fr; gap: 2.5rem; }
+      .pdp-gallery { position: static; }
+      .pdp-measurements { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .pdp-wrap { padding: 1.5rem 1rem 3rem; }
+      .pdp-measurements { grid-template-columns: 1fr 1fr; }
+      .pdp-size-guide-diagram { flex-direction: column; }
+      .pdp-related { padding: 2rem 1rem 3rem; }
+    }
   </style>
 </head>
 <body>
@@ -748,7 +1013,7 @@
 
   <div class="hero">
     <div class="hero-eyebrow" style="font-family:inherit;letter-spacing:.15em;text-transform:none;margin-bottom:.6rem">بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
-    <div class="hero-eyebrow">Our 1st Collection — Niyyah Abaya</div>
+    <div class="hero-eyebrow">New Collection — Raya 2025</div>
     <h1 class="hero-title">Dressed in<br><em>quiet elegance</em></h1>
     <p class="hero-sub">Abayas crafted for the modern Muslim woman — modest, refined, and made to move with you.</p>
     <div class="ships-badge">Worldwide Shipping Available</div>
@@ -1086,6 +1351,158 @@
 </div>
 
 <!-- ════════════════════════════════════════════
+     PRODUCT DETAIL PAGE
+════════════════════════════════════════════ -->
+<div id="page-product" class="page">
+  <nav>
+    <div class="nav-logo" onclick="showPage('landing')">KADH <span>COLLECTIVE</span></div>
+    <div class="nav-links">
+      <a onclick="showPage('landing')">← Back to Collection</a>
+    </div>
+    <div class="nav-right">
+      <select class="currency-sel" onchange="setCurrency(this.value)" id="currency-product">
+        <option value="MYR">MYR</option>
+        <option value="USD">USD</option>
+        <option value="AED">AED</option>
+        <option value="GBP">GBP</option>
+        <option value="EUR">EUR</option>
+        <option value="SGD">SGD</option>
+        <option value="AUD">AUD</option>
+        <option value="SAR">SAR</option>
+      </select>
+      <button class="cart-btn" onclick="showPage('cart')">
+        Bag <span class="cart-count" id="cart-count-product">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="pdp-wrap">
+    <div class="pdp-container">
+
+      <div class="pdp-breadcrumb">
+        <a onclick="showPage('landing')">Collection</a>
+        <span>›</span>
+        <span id="pdp-breadcrumb-name">Product</span>
+      </div>
+
+      <div class="pdp-layout">
+
+        <!-- LEFT: Gallery -->
+        <div class="pdp-gallery">
+          <div class="pdp-main-img" id="pdp-main-img">
+            <!-- filled by JS -->
+          </div>
+          <div class="pdp-thumbs" id="pdp-thumbs">
+            <!-- filled by JS -->
+          </div>
+        </div>
+
+        <!-- RIGHT: Info -->
+        <div class="pdp-info">
+          <div class="pdp-badge-row" id="pdp-badge-row"></div>
+          <div class="pdp-name" id="pdp-name">—</div>
+          <div class="pdp-price" id="pdp-price">—</div>
+          <div class="pdp-description" id="pdp-description">—</div>
+
+          <!-- Measurements -->
+          <div class="pdp-section-label">Size & Measurements</div>
+          <div class="pdp-size-note">
+            This abaya is designed as <strong>One Size</strong>. The relaxed silhouette is crafted to drape beautifully on a wide range of body types.
+          </div>
+          <div class="pdp-measurements" id="pdp-measurements">
+            <div class="pdp-meas-item">
+              <span class="pdp-meas-label">Length</span>
+              <span class="pdp-meas-value" id="pdp-length">—</span>
+            </div>
+            <div class="pdp-meas-item">
+              <span class="pdp-meas-label">Sleeve</span>
+              <span class="pdp-meas-value" id="pdp-sleeve">—</span>
+            </div>
+          </div>
+
+          <!-- Size guide toggle -->
+          <button class="pdp-size-guide-toggle" onclick="toggleSizeGuide()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            How to Measure
+          </button>
+
+          <div class="pdp-size-guide" id="pdp-size-guide">
+            <div class="pdp-size-guide-title">How to Take Your Measurements</div>
+            <div class="pdp-size-guide-diagram">
+              <div class="pdp-size-guide-svg">
+                <svg width="100" height="160" viewBox="0 0 100 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- figure -->
+                  <circle cx="50" cy="18" r="10" fill="#E8DFD0"/>
+                  <path d="M50 28C50 28 38 32 33 42L22 100 34 102 37 72 38 160 62 160 63 72 66 102 78 100 67 42C62 32 50 28 50 28Z" fill="#E8DFD0"/>
+                  <!-- length line -->
+                  <line x1="80" y1="28" x2="80" y2="160" stroke="#B8965A" stroke-width="1.5" stroke-dasharray="3 2"/>
+                  <line x1="76" y1="28" x2="84" y2="28" stroke="#B8965A" stroke-width="1.5"/>
+                  <line x1="76" y1="160" x2="84" y2="160" stroke="#B8965A" stroke-width="1.5"/>
+                  <text x="86" y="100" font-size="7" fill="#B8965A" font-family="sans-serif">L</text>
+                  <!-- sleeve line -->
+                  <line x1="22" y1="58" x2="5" y2="58" stroke="#B8965A" stroke-width="1.5" stroke-dasharray="3 2"/>
+                  <line x1="22" y1="54" x2="22" y2="62" stroke="#B8965A" stroke-width="1.5"/>
+                  <line x1="5" y1="54" x2="5" y2="62" stroke="#B8965A" stroke-width="1.5"/>
+                  <text x="7" y="52" font-size="7" fill="#B8965A" font-family="sans-serif">S</text>
+                </svg>
+              </div>
+              <div class="pdp-size-guide-steps">
+                <div class="pdp-size-step">
+                  <div class="pdp-step-num">L</div>
+                  <div class="pdp-step-text"><strong>Length:</strong> Measure from the top of the shoulder straight down to the hem. Stand upright with feet together.</div>
+                </div>
+                <div class="pdp-size-step">
+                  <div class="pdp-step-num">S</div>
+                  <div class="pdp-step-text"><strong>Sleeve:</strong> Measure from the shoulder seam along the outer arm to the end of the cuff with arm slightly bent.</div>
+                </div>
+                <div class="pdp-size-step">
+                  <div class="pdp-step-num">?</div>
+                  <div class="pdp-step-text">Not sure? WhatsApp us your height and we'll help you find the best fit.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add to bag -->
+          <button class="pdp-add-btn" id="pdp-add-btn" onclick="pdpAddToCart()">Add to Bag</button>
+
+          <!-- Trust signals -->
+          <div class="pdp-trust">
+            <div class="pdp-trust-item">
+              <svg class="pdp-trust-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Free returns within 30 days
+            </div>
+            <div class="pdp-trust-item">
+              <svg class="pdp-trust-icon" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Ships from Kuala Lumpur
+            </div>
+            <div class="pdp-trust-item">
+              <svg class="pdp-trust-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              Carefully packed & tracked
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- You may also like -->
+  <div class="pdp-related">
+    <div class="pdp-related-inner">
+      <div class="pdp-related-header">
+        <div class="section-eyebrow">You May Also Like</div>
+        <div class="section-title" style="font-size:1.6rem">More from the Collection</div>
+      </div>
+      <div class="pdp-related-grid" id="pdp-related-grid">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+
+  <div class="mini-footer">© 2025 KADH Collective</div>
+</div>
+
+<!-- ════════════════════════════════════════════
      SUCCESS PAGE
 ════════════════════════════════════════════ -->
 <div id="page-success" class="page">
@@ -1187,6 +1604,10 @@
     renderCart()
     renderOrderSummary()
     updateShipping()
+    if (currentProduct) {
+      document.getElementById('pdp-price').textContent = fmt(currentProduct.price)
+      renderRelated(currentProduct.id)
+    }
   }
 
   /* ─────────────────────────────────────────────
@@ -1303,7 +1724,7 @@
     try {
       const { data, error } = await db
         .from('products')
-        .select('*')
+        .select('id, name, description, price, image_url, images, badge, in_stock, length, sleeve, created_at')
         .eq('in_stock', true)
         .order('created_at', { ascending: false })
 
@@ -1329,11 +1750,15 @@
       return
     }
 
-    grid.innerHTML = products.map((p, i) => `
-      <div class="product-card">
+    grid.innerHTML = products.map((p, i) => {
+      const imgs = (p.images && p.images.length > 0)
+        ? p.images
+        : (p.image_url ? [p.image_url] : [])
+      return `
+      <div class="product-card" onclick="openProduct(${p.id})" style="cursor:pointer">
         <div class="product-img">
-          ${p.image_url
-            ? `<img src="${p.image_url}" alt="${p.name}" loading="lazy">`
+          ${imgs.length > 0
+            ? `<img src="${imgs[0]}" alt="${p.name}" loading="lazy">`
             : `<div class="product-img-placeholder">${demoSVG(i)}</div>`
           }
           ${p.badge ? `<div class="product-badge">${p.badge}</div>` : ''}
@@ -1343,10 +1768,11 @@
           <div class="product-desc">${p.description || ''}</div>
           <div class="product-footer">
             <div class="product-price">${fmt(p.price)}</div>
-            <button class="add-btn" onclick="addToCart(${p.id}, '${p.name.replace(/'/g,"\\'")}', ${p.price}, '${p.image_url || ''}')">Add to Bag</button>
+            <button class="add-btn" onclick="event.stopPropagation(); addToCart(${p.id}, '${p.name.replace(/'/g,"\\'")}', ${p.price}, '${imgs[0] || ''}')">Add to Bag</button>
           </div>
         </div>
-      </div>`).join('')
+      </div>`
+    }).join('')
   }
 
   /* ─────────────────────────────────────────────
@@ -1555,14 +1981,136 @@
   }
 
   /* ─────────────────────────────────────────────
+     PRODUCT DETAIL PAGE
+  ─────────────────────────────────────────────── */
+  let currentProduct = null
+
+  function openProduct(id) {
+    const product = cachedProducts.find(p => p.id === id)
+    if (!product) return
+
+    currentProduct = product
+
+    // Breadcrumb
+    document.getElementById('pdp-breadcrumb-name').textContent = product.name
+
+    // Badge
+    const badgeRow = document.getElementById('pdp-badge-row')
+    badgeRow.innerHTML = product.badge
+      ? `<span class="pdp-badge">${product.badge}</span>`
+      : ''
+
+    // Name & price
+    document.getElementById('pdp-name').textContent = product.name
+    document.getElementById('pdp-price').textContent = fmt(product.price)
+
+    // Description
+    document.getElementById('pdp-description').textContent =
+      product.description || 'No description available.'
+
+    // Measurements — use product fields if they exist, else show dashes
+    document.getElementById('pdp-length').textContent  = product.length  || '—'
+    document.getElementById('pdp-sleeve').textContent  = product.sleeve  || '—'
+
+    // Gallery
+    const imgs = (product.images && product.images.length > 0)
+      ? product.images
+      : (product.image_url ? [product.image_url] : [])
+
+    const mainWrap = document.getElementById('pdp-main-img')
+    mainWrap.innerHTML = imgs.length > 0
+      ? `<img src="${imgs[0]}" alt="${product.name}" id="pdp-active-img">`
+      : `<div class="pdp-main-placeholder">${demoSVG(0)}</div>`
+
+    const thumbsWrap = document.getElementById('pdp-thumbs')
+    if (imgs.length > 1) {
+      thumbsWrap.innerHTML = imgs.map((url, i) => `
+        <div class="pdp-thumb ${i === 0 ? 'active' : ''}" onclick="pdpSelectThumb(this, '${url}')">
+          <img src="${url}" alt="${product.name} view ${i + 1}">
+        </div>`).join('')
+    } else if (imgs.length === 1) {
+      thumbsWrap.innerHTML = `
+        <div class="pdp-thumb active">
+          <img src="${imgs[0]}" alt="${product.name}">
+        </div>`
+    } else {
+      thumbsWrap.innerHTML = ''
+    }
+
+    // Close size guide
+    document.getElementById('pdp-size-guide').classList.remove('open')
+
+    // Related products (all except current, max 4)
+    renderRelated(id)
+
+    showPage('product')
+  }
+
+  function pdpSelectThumb(el, url) {
+    document.querySelectorAll('.pdp-thumb').forEach(t => t.classList.remove('active'))
+    el.classList.add('active')
+    const mainImg = document.getElementById('pdp-active-img')
+    if (mainImg) {
+      mainImg.style.opacity = '0'
+      setTimeout(() => { mainImg.src = url; mainImg.style.opacity = '1' }, 150)
+    }
+  }
+
+  function toggleSizeGuide() {
+    document.getElementById('pdp-size-guide').classList.toggle('open')
+  }
+
+  function pdpAddToCart() {
+    if (!currentProduct) return
+    const imgs = (currentProduct.images && currentProduct.images.length > 0)
+      ? currentProduct.images
+      : (currentProduct.image_url ? [currentProduct.image_url] : [])
+    addToCart(currentProduct.id, currentProduct.name, currentProduct.price, imgs[0] || '')
+  }
+
+  function renderRelated(excludeId) {
+    const grid = document.getElementById('pdp-related-grid')
+    if (!grid) return
+    const related = cachedProducts.filter(p => p.id !== excludeId).slice(0, 4)
+    if (related.length === 0) {
+      grid.closest('.pdp-related').style.display = 'none'
+      return
+    }
+    grid.closest('.pdp-related').style.display = ''
+    grid.innerHTML = related.map((p, i) => {
+      const imgs = (p.images && p.images.length > 0)
+        ? p.images
+        : (p.image_url ? [p.image_url] : [])
+      return `
+        <div class="product-card" onclick="openProduct(${p.id})" style="cursor:pointer">
+          <div class="product-img">
+            ${imgs.length > 0
+              ? `<img src="${imgs[0]}" alt="${p.name}" loading="lazy">`
+              : `<div class="product-img-placeholder">${demoSVG(i)}</div>`
+            }
+            ${p.badge ? `<div class="product-badge">${p.badge}</div>` : ''}
+          </div>
+          <div class="product-info">
+            <div class="product-name">${p.name}</div>
+            <div class="product-desc">${p.description || ''}</div>
+            <div class="product-footer">
+              <div class="product-price">${fmt(p.price)}</div>
+              <button class="add-btn" onclick="event.stopPropagation(); addToCart(${p.id}, '${p.name.replace(/'/g,"\\'")}', ${p.price}, '${imgs[0] || ''}')">Add to Bag</button>
+            </div>
+          </div>
+        </div>`
+    }).join('')
+  }
+
+  /* ─────────────────────────────────────────────
      DEMO PRODUCTS (fallback if Supabase not connected)
      Remove this once your Supabase keys are added
   ─────────────────────────────────────────────── */
   const DEMO_PRODUCTS = [
-    { id: 1, name: 'Sahara Abaya',   description: 'Relaxed cardigan cut in premium linen blend', price: 280, image_url: '', badge: 'Bestseller', in_stock: true },
-    { id: 2, name: 'Nuora Abaya',    description: 'Fluid crepe with delicate front pleat detail', price: 195, image_url: '', badge: '',           in_stock: true },
-    { id: 3, name: 'Hilya Abaya',    description: 'Structured shoulder with modest A-line silhouette', price: 199, image_url: '', badge: 'New',  in_stock: true },
-    { id: 4, name: 'Nashmiya Abaya', description: 'Lightweight chiffon layer for warm evenings', price: 175, image_url: '', badge: '',            in_stock: true },
+    { id: 1, name: 'Sahara Abaya',   description: 'Relaxed cardigan cut in premium linen blend', price: 280, image_url: '', images: [], badge: 'Bestseller', in_stock: true, length: '145 cm', sleeve: '60 cm' },
+    { id: 2, name: 'Nuora Abaya',    description: 'Fluid crepe with delicate front pleat detail', price: 195, image_url: '', images: [], badge: '',           in_stock: true, length: '143 cm', sleeve: '58 cm' },
+    { id: 3, name: 'Hilya Abaya',    description: 'Structured shoulder with modest A-line silhouette', price: 199, image_url: '', images: [], badge: 'New',  in_stock: true, length: '148 cm', sleeve: '61 cm' },
+    { id: 4, name: 'Nashmiya Abaya', description: 'Lightweight chiffon layer for warm evenings', price: 175, image_url: '', images: [], badge: '',            in_stock: true, length: '142 cm', sleeve: '57 cm' },
   ]
 
   /* ─────────────────────────────────────────────
