@@ -2099,18 +2099,48 @@
 
   /* ─────────────────────────────────────────────
      IMAGE HELPER
-     Supabase JSONB arrays can come back as strings —
-     this safely handles both parsed arrays and raw strings.
+     Handles all the ways Supabase can return images:
+     - JSON array string: '["url1","url2"]'
+     - Bare URL string:   'https://...'
+     - Already an array:  ['url1','url2']
+     - Empty / null / '{}'
+     Also merges image_url + images so both fields show.
   ─────────────────────────────────────────────── */
   function parseImages(p) {
-    let imgs = p.images
-    if (typeof imgs === 'string') {
-      try { imgs = JSON.parse(imgs) } catch(e) { imgs = [] }
+    const collected = []
+
+    // 1. Always include image_url if present
+    if (p.image_url && typeof p.image_url === 'string' && p.image_url.trim()) {
+      collected.push(p.image_url.trim())
     }
-    if (!Array.isArray(imgs) || imgs.length === 0) {
-      imgs = p.image_url ? [p.image_url] : []
+
+    // 2. Parse the images field
+    let raw = p.images
+    if (raw) {
+      if (Array.isArray(raw)) {
+        raw.forEach(u => u && collected.push(u))
+      } else if (typeof raw === 'string') {
+        const s = raw.trim()
+        if (s && s !== '{}' && s !== '""' && s !== '') {
+          if (s.startsWith('[')) {
+            try {
+              const parsed = JSON.parse(s)
+              if (Array.isArray(parsed)) parsed.forEach(u => u && collected.push(u))
+            } catch(e) {}
+          } else if (s.startsWith('{')) {
+            s.slice(1, -1).split(',').forEach(u => {
+              const clean = u.trim().replace(/^"|"$/g, '')
+              if (clean) collected.push(clean)
+            })
+          } else if (s.startsWith('http')) {
+            collected.push(s)
+          }
+        }
+      }
     }
-    return imgs
+
+    // Deduplicate while preserving order
+    return [...new Set(collected.filter(Boolean))]
   }
 
   /* ─────────────────────────────────────────────
