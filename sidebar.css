@@ -1,0 +1,67 @@
+.sidebar {
+    position: fixed;
+    left: 0;
+    width: 250px;
+    height: 100%;
+    background-color: #f8f9fa;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.sidebar.collapsed {
+    width: 60px;
+}
+
+.breadcrumb {
+    background-color: #ffffff;
+    padding: 10px 15px;
+    border-radius: 5px;
+}
+
+.date-range-filter {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px;
+}
+
+.revenue-chart {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.conversion-funnel {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.low-stock-alert {
+    color: red;
+    font-weight: bold;
+    padding: 10px;
+    border: 1px solid #ffcccc;
+    border-radius: 5px;
+}
+
+.bulk-actions {
+    margin: 20px 0;
+}
+
+.product-variants {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.customer-crm {
+    background-color: #ffffff;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.audit-log {
+    background-color: #eeeeee;
+    padding: 15px;
+    border-radius: 5px;
+}
