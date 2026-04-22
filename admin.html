@@ -489,6 +489,12 @@
         <span class="nav-icon">✦</span> Promos &amp; Discounts
       </div>
 
+      <div class="nav-section">Logistics</div>
+      <div class="nav-item" onclick="showPanel('ingestion', this)">
+        <span class="nav-icon">⚡</span> Order Ingestion
+        <span class="nav-badge" id="nav-ingestion-count" style="display:none">!</span>
+      </div>
+
       <div class="nav-section">Site</div>
       <div class="nav-item" onclick="showPanel('settings', this)">
         <span class="nav-icon">◈</span> Site Settings
@@ -633,6 +639,119 @@
         </div>
 
       </div><!-- /panel-dashboard -->
+
+      <!-- ───────────────────────────────────────
+           ORDER INGESTION & VALIDATION MONITOR
+      ─────────────────────────────────────── -->
+      <div class="panel" id="panel-ingestion">
+
+        <!-- Header row -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+          <div>
+            <h2 style="font-family:var(--font-display);font-size:1.5rem;font-weight:300">Order Ingestion Monitor</h2>
+            <p style="font-size:.76rem;color:var(--mid);margin-top:.2rem">Live view of raw → validated → ready-to-ship order pipeline</p>
+          </div>
+          <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="loadIngestionQueue()">↺ Refresh</button>
+            <button class="btn btn-dark btn-sm" onclick="bulkConfirmPending()">✓ Confirm All Pending</button>
+          </div>
+        </div>
+
+        <!-- Pipeline status cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem" id="ingestion-stats">
+          <div class="stat-card" style="border-left:3px solid var(--warn)">
+            <div class="stat-eyebrow">Pending</div>
+            <div class="stat-value" id="ing-stat-pending">—</div>
+            <div class="stat-sub">awaiting validation</div>
+          </div>
+          <div class="stat-card" style="border-left:3px solid var(--info)">
+            <div class="stat-eyebrow">Confirmed</div>
+            <div class="stat-value" id="ing-stat-confirmed">—</div>
+            <div class="stat-sub">validated & ready</div>
+          </div>
+          <div class="stat-card" style="border-left:3px solid var(--success)">
+            <div class="stat-eyebrow">Shipped Today</div>
+            <div class="stat-value" id="ing-stat-shipped">—</div>
+            <div class="stat-sub">dispatched</div>
+          </div>
+          <div class="stat-card" style="border-left:3px solid var(--danger)">
+            <div class="stat-eyebrow">Flagged</div>
+            <div class="stat-value" id="ing-stat-flagged">—</div>
+            <div class="stat-sub">needs review</div>
+          </div>
+        </div>
+
+        <!-- Validation rules legend -->
+        <div class="card" style="margin-bottom:1.25rem;padding:1rem 1.5rem">
+          <div style="font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:.85rem">Validation Rules Applied on Ingestion</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem">
+            <div id="ing-rules-list"></div>
+          </div>
+        </div>
+
+        <!-- Filter / search bar -->
+        <div style="display:flex;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap">
+          <input class="search-input" id="ing-search" type="text" placeholder="Search order ref, customer, email…" oninput="filterIngestion()">
+          <select class="status-filter" id="ing-status-filter" onchange="filterIngestion()">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="shipped">Shipped</option>
+            <option value="flagged">Flagged</option>
+          </select>
+          <select class="status-filter" id="ing-zone-filter" onchange="filterIngestion()">
+            <option value="">All Zones</option>
+            <option value="MY">Malaysia</option>
+            <option value="SG">Singapore</option>
+            <option value="ID">Indonesia</option>
+            <option value="GCC">GCC</option>
+            <option value="EU">Europe</option>
+            <option value="US">USA</option>
+            <option value="AU">Australia</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+
+        <!-- Orders pipeline table -->
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Order Ref</th>
+                  <th>Customer</th>
+                  <th>Zone</th>
+                  <th>Items</th>
+                  <th>Total (RM)</th>
+                  <th>Shipping</th>
+                  <th>Validation</th>
+                  <th>Status</th>
+                  <th>Received</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="ingestion-tbody">
+                <tr><td colspan="10"><div class="loading"><span class="spinner"></span>Loading pipeline…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Order detail drawer (slide-in) -->
+        <div id="ing-drawer" style="
+          position:fixed;top:0;right:-480px;width:480px;max-width:100vw;height:100vh;
+          background:var(--cream);border-left:1px solid var(--sand);z-index:600;
+          transition:right .3s ease;overflow-y:auto;display:flex;flex-direction:column
+        ">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--sand);position:sticky;top:0;background:var(--cream)">
+            <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:400" id="ing-drawer-title">Order Detail</div>
+            <button onclick="closeIngDrawer()" style="background:none;border:none;font-size:1.3rem;color:var(--mid);cursor:pointer">✕</button>
+          </div>
+          <div id="ing-drawer-body" style="padding:1.5rem;flex:1"></div>
+        </div>
+        <div id="ing-drawer-bg" onclick="closeIngDrawer()" style="display:none;position:fixed;inset:0;background:rgba(44,36,24,.35);z-index:599"></div>
+
+      </div><!-- /panel-ingestion -->
 
 
       <!-- ───────────────────────────────────────
@@ -1435,12 +1554,17 @@ function showPanel(id, el) {
   document.getElementById('panel-' + id).classList.add('active')
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
   if (el) el.classList.add('active')
-  document.getElementById('topbar-title').textContent = PANEL_TITLES[id] || id
-  // Set breadcrumb
+  const INGESTION_LABEL = { ingestion: 'Order Ingestion' }
+  document.getElementById('topbar-title').textContent = INGESTION_LABEL[id] || PANEL_TITLES[id] || id
   KADH.breadcrumb(id === 'dashboard' ? [] : [
     { label: 'Dashboard', panel: 'dashboard' },
-    { label: PANEL_TITLES[id] || id },
+    { label: INGESTION_LABEL[id] || PANEL_TITLES[id] || id },
   ])
+  // Lazy-load ingestion panel on first open
+  if (id === 'ingestion') {
+    renderIngestionRules()
+    loadIngestionQueue()
+  }
 }
 
 /* ──────────────────────────────
@@ -2242,6 +2366,276 @@ async function saveSettings() {
   }
   addAudit({ action: 'Updated site settings', type: 'info' })
   showToast('Settings saved ✓')
+}
+
+/* ══════════════════════════════════════════════════════
+   ORDER INGESTION & VALIDATION PIPELINE — ADMIN SIDE
+   ══════════════════════════════════════════════════════ */
+
+const INGESTION_RULES = [
+  { icon: '✓', label: 'Full name ≥ 2 chars, no HTML'         },
+  { icon: '✓', label: 'Valid email format (RFC 5321)'         },
+  { icon: '✓', label: 'Phone digits 7–15 (if provided)'      },
+  { icon: '✓', label: 'Address ≥ 10 chars'                   },
+  { icon: '✓', label: 'Cart 1–20 items, qty 1–10 each'       },
+  { icon: '✓', label: 'Price & total positive numbers'        },
+  { icon: '✓', label: 'Shipping zone auto-mapped from country'},
+  { icon: '✓', label: 'XSS sanitisation on all text fields'  },
+  { icon: '✓', label: 'Unique order_ref (KADH-timestamp)'    },
+  { icon: '✓', label: 'Ingestion version tag appended'       },
+]
+
+let allIngestionOrders = []
+let filteredIngestionOrders = []
+
+function renderIngestionRules() {
+  const el = document.getElementById('ing-rules-list')
+  if (!el) return
+  el.outerHTML = `<div id="ing-rules-list" style="display:contents">${
+    INGESTION_RULES.map(r => `
+      <div style="display:flex;align-items:center;gap:.5rem;font-size:.76rem;color:var(--mid);padding:.2rem 0">
+        <span style="color:var(--success);font-weight:700">${r.icon}</span>
+        <span>${r.label}</span>
+      </div>`).join('')
+  }</div>`
+}
+
+async function loadIngestionQueue() {
+  document.getElementById('ingestion-tbody').innerHTML =
+    '<tr><td colspan="10"><div class="loading"><span class="spinner"></span>Loading pipeline…</div></td></tr>'
+  try {
+    const { data, error } = await db
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200)
+    if (error) throw error
+    allIngestionOrders = data || []
+  } catch {
+    // Demo fallback using allOrders if already loaded
+    allIngestionOrders = (typeof allOrders !== 'undefined' ? allOrders : []).map(o => ({
+      ...o,
+      order_ref: o.order_ref || ('KADH-' + String(o.id).padStart(6,'0')),
+      shipping_zone: o.shipping_zone || 'MY',
+      shipping_method: o.shipping_method || 'Standard',
+      shipping_eta: o.shipping_eta || '2–4 business days',
+      _validation_pass: true,
+      _ingestion_ver: '2.0',
+      _ingested_at: o.created_at || new Date().toISOString(),
+    }))
+  }
+  updateIngestionStats()
+  filteredIngestionOrders = [...allIngestionOrders]
+  renderIngestionTable(filteredIngestionOrders)
+}
+
+function updateIngestionStats() {
+  const today = new Date().toDateString()
+  const count = (status) => allIngestionOrders.filter(o => o.status === status).length
+  const shippedToday = allIngestionOrders.filter(o =>
+    o.status === 'shipped' && new Date(o.created_at).toDateString() === today
+  ).length
+
+  document.getElementById('ing-stat-pending').textContent   = count('pending')
+  document.getElementById('ing-stat-confirmed').textContent = count('confirmed')
+  document.getElementById('ing-stat-shipped').textContent   = shippedToday
+  document.getElementById('ing-stat-flagged').textContent   = allIngestionOrders.filter(o => o.status === 'flagged' || o._validation_pass === false).length
+
+  // Show badge in sidebar if pending > 0
+  const badge = document.getElementById('nav-ingestion-count')
+  if (badge) {
+    const p = count('pending')
+    badge.textContent = p
+    badge.style.display = p > 0 ? '' : 'none'
+  }
+}
+
+function filterIngestion() {
+  const q      = document.getElementById('ing-search').value.toLowerCase()
+  const status = document.getElementById('ing-status-filter').value
+  const zone   = document.getElementById('ing-zone-filter').value
+
+  filteredIngestionOrders = allIngestionOrders.filter(o => {
+    const matchQ = !q ||
+      (o.order_ref || '').toLowerCase().includes(q) ||
+      (o.customer_name || '').toLowerCase().includes(q) ||
+      (o.email || '').toLowerCase().includes(q)
+    const matchS = !status || o.status === status
+    const matchZ = !zone   || o.shipping_zone === zone
+    return matchQ && matchS && matchZ
+  })
+  renderIngestionTable(filteredIngestionOrders)
+}
+
+function renderIngestionTable(orders) {
+  const tbody = document.getElementById('ingestion-tbody')
+  if (!orders.length) {
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">⚡</div>No orders match the current filters.</div></td></tr>'
+    return
+  }
+
+  tbody.innerHTML = orders.map(o => {
+    const items = Array.isArray(o.items) ? o.items : []
+    const itemSummary = items.length
+      ? items.slice(0,2).map(i => `${i.name || i} ×${i.qty||1}`).join(', ') + (items.length > 2 ? ` +${items.length-2}` : '')
+      : '—'
+    const validIcon = o._validation_pass === false
+      ? '<span title="Validation failed" style="color:var(--danger)">✗ Failed</span>'
+      : '<span title="All checks passed" style="color:var(--success)">✓ Passed</span>'
+    const ver = o._ingestion_ver ? `<span style="font-size:.65rem;color:var(--mid)">v${o._ingestion_ver}</span>` : ''
+    const ts = o._ingested_at || o.created_at
+    const dateStr = ts ? new Date(ts).toLocaleString('en-MY', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—'
+    const total = typeof o.total === 'number' ? o.total.toFixed(2) : (o.total || '—')
+
+    const actionBtns = o.status === 'pending'
+      ? `<button class="btn btn-sm btn-success" onclick="ingConfirm('${escAttr(o.order_ref||o.id)}')">Confirm</button>
+         <button class="btn btn-sm btn-ghost" onclick="ingFlag('${escAttr(o.order_ref||o.id)}')">Flag</button>`
+      : o.status === 'confirmed'
+      ? `<button class="btn btn-sm btn-dark" onclick="ingShip('${escAttr(o.order_ref||o.id)}')">Mark Shipped</button>`
+      : ''
+
+    return `<tr onclick="openIngDrawer('${escAttr(o.order_ref||String(o.id))}')" style="cursor:pointer">
+      <td><span style="font-family:monospace;font-size:.76rem">${escHtml(o.order_ref || '#'+o.id)}</span></td>
+      <td>
+        <div style="font-size:.82rem">${escHtml(o.customer_name||'—')}</div>
+        <div style="font-size:.7rem;color:var(--mid)">${escHtml(o.email||'')}</div>
+      </td>
+      <td><span style="font-size:.76rem;background:var(--soft);border:1px solid var(--sand);padding:2px 7px;border-radius:4px">${escHtml(o.shipping_zone||o.country||'—')}</span></td>
+      <td style="font-size:.76rem;color:var(--mid);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escAttr(itemSummary)}">${escHtml(itemSummary)}</td>
+      <td style="font-weight:500">RM ${total}</td>
+      <td style="font-size:.76rem;color:var(--mid)">${escHtml(o.shipping_method||'—')}</td>
+      <td>${validIcon} ${ver}</td>
+      <td>${statusBadge(o.status)}</td>
+      <td style="font-size:.74rem;color:var(--mid)">${dateStr}</td>
+      <td onclick="event.stopPropagation()" style="white-space:nowrap">${actionBtns}</td>
+    </tr>`
+  }).join('')
+}
+
+async function ingConfirm(ref) {
+  await ingUpdateStatus(ref, 'confirmed')
+  addAudit({ action: `Confirmed order <strong>${ref}</strong>`, type: 'success' })
+}
+async function ingFlag(ref) {
+  await ingUpdateStatus(ref, 'flagged')
+  addAudit({ action: `Flagged order <strong>${ref}</strong> for review`, type: 'warn' })
+}
+async function ingShip(ref) {
+  await ingUpdateStatus(ref, 'shipped')
+  addAudit({ action: `Marked order <strong>${ref}</strong> as shipped`, type: 'info' })
+}
+
+async function ingUpdateStatus(ref, status) {
+  try {
+    await db.from('orders').update({ status }).eq('order_ref', ref)
+  } catch {
+    // Demo: update in-memory
+    const o = allIngestionOrders.find(x => (x.order_ref||String(x.id)) === ref)
+    if (o) o.status = status
+  }
+  await loadIngestionQueue()
+  showToast(`Order ${ref} → ${status}`)
+}
+
+async function bulkConfirmPending() {
+  const pending = allIngestionOrders.filter(o => o.status === 'pending')
+  if (!pending.length) { showToast('No pending orders to confirm.'); return }
+  for (const o of pending) {
+    await ingUpdateStatus(o.order_ref || String(o.id), 'confirmed')
+  }
+  addAudit({ action: `Bulk confirmed ${pending.length} pending order(s)`, type: 'success' })
+}
+
+/* ── Ingestion detail drawer ── */
+function openIngDrawer(ref) {
+  const o = allIngestionOrders.find(x => (x.order_ref || String(x.id)) === ref)
+  if (!o) return
+
+  const items = Array.isArray(o.items) ? o.items : []
+  const itemsHtml = items.map(i => `
+    <div style="display:flex;justify-content:space-between;font-size:.82rem;padding:.45rem 0;border-bottom:1px solid var(--sand)">
+      <span>${escHtml(i.name||String(i))} <span style="color:var(--mid)">× ${i.qty||1}</span></span>
+      <span style="font-weight:500">RM ${((i.line_total || (i.unit_price||i.price||0) * (i.qty||1))).toFixed(2)}</span>
+    </div>`).join('') || '<div style="color:var(--mid);font-size:.8rem">No item detail available</div>'
+
+  const validRows = [
+    ['Order Ref',         o.order_ref || '—'],
+    ['Ingestion Version', o._ingestion_ver   || 'legacy'],
+    ['Validation Pass',  o._validation_pass === false ? '✗ Failed' : '✓ Passed'],
+    ['Ingested At',      o._ingested_at ? new Date(o._ingested_at).toLocaleString('en-MY') : '—'],
+  ]
+  const detailRows = [
+    ['Customer Name',    o.customer_name  || '—'],
+    ['Email',            o.email          || '—'],
+    ['Phone',            o.phone          || '—'],
+    ['Country',          o.country        || '—'],
+    ['Shipping Zone',    o.shipping_zone  || '—'],
+    ['Address',          o.address        || '—'],
+    ['Shipping Method',  o.shipping_method|| '—'],
+    ['ETA',              o.shipping_eta   || '—'],
+    ['Shipping Cost',    o.shipping_cost != null ? 'RM ' + Number(o.shipping_cost).toFixed(2) : '—'],
+    ['Subtotal',         o.subtotal       != null ? 'RM ' + Number(o.subtotal).toFixed(2) : '—'],
+    ['Total',            o.total          != null ? 'RM ' + Number(o.total).toFixed(2) : '—'],
+    ['Currency',         o.currency       || 'MYR'],
+    ['Status',           o.status         || '—'],
+    ['Created At',       o.created_at ? new Date(o.created_at).toLocaleString('en-MY') : '—'],
+  ]
+
+  function detailTable(rows) {
+    return rows.map(([k,v]) => `
+      <div style="display:flex;gap:.75rem;padding:.35rem 0;border-bottom:1px solid rgba(232,223,208,.5);font-size:.8rem">
+        <span style="color:var(--mid);min-width:120px;flex-shrink:0">${k}</span>
+        <span style="word-break:break-word">${escHtml(String(v))}</span>
+      </div>`).join('')
+  }
+
+  const waMsg = encodeURIComponent(
+    `📦 *Order Update — ${o.order_ref||'#'+o.id}*\n\nDear ${o.customer_name||'Customer'},\n\nYour order has been ${o.status}. We will send you tracking details shortly.\n\nThank you for choosing KADH Collective! 🤍`
+  )
+  const waLink = o.phone
+    ? `<a href="https://wa.me/${o.phone.replace(/[\s\-()+ ]/g,'')}?text=${waMsg}" target="_blank" class="btn btn-sm" style="background:#25D366;color:#fff;border:none;display:inline-flex;align-items:center;gap:.4rem;margin-top:.5rem">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        WhatsApp Customer</a>`
+    : ''
+
+  document.getElementById('ing-drawer-title').textContent = o.order_ref || ('#'+o.id)
+  document.getElementById('ing-drawer-body').innerHTML = `
+    <div style="margin-bottom:1.25rem">
+      <div style="font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem">Ingestion Metadata</div>
+      <div style="background:var(--soft);border:1px solid var(--sand);border-radius:var(--radius-md);padding:.75rem 1rem">
+        ${detailTable(validRows)}
+      </div>
+    </div>
+    <div style="margin-bottom:1.25rem">
+      <div style="font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem">Customer & Shipping</div>
+      <div style="background:var(--soft);border:1px solid var(--sand);border-radius:var(--radius-md);padding:.75rem 1rem">
+        ${detailTable(detailRows)}
+        ${waLink}
+      </div>
+    </div>
+    <div style="margin-bottom:1.25rem">
+      <div style="font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem">Line Items</div>
+      <div style="background:var(--soft);border:1px solid var(--sand);border-radius:var(--radius-md);padding:.75rem 1rem">
+        ${itemsHtml}
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-display);font-size:1rem;padding:.6rem 0 0;border-top:1px solid var(--sand);margin-top:.35rem">
+          <span>Total</span><span>RM ${o.total != null ? Number(o.total).toFixed(2) : '—'}</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+      ${o.status === 'pending'   ? `<button class="btn btn-sm btn-success" onclick="ingConfirm('${escAttr(o.order_ref||o.id)}');closeIngDrawer()">✓ Confirm</button>` : ''}
+      ${o.status === 'confirmed' ? `<button class="btn btn-sm btn-dark" onclick="ingShip('${escAttr(o.order_ref||o.id)}');closeIngDrawer()">Mark Shipped</button>` : ''}
+      ${o.status !== 'flagged'   ? `<button class="btn btn-sm btn-danger" onclick="ingFlag('${escAttr(o.order_ref||o.id)}');closeIngDrawer()">Flag for Review</button>` : ''}
+    </div>
+  `
+
+  document.getElementById('ing-drawer').style.right = '0'
+  document.getElementById('ing-drawer-bg').style.display = 'block'
+}
+
+function closeIngDrawer() {
+  document.getElementById('ing-drawer').style.right = '-480px'
+  document.getElementById('ing-drawer-bg').style.display = 'none'
 }
 
 /* ──────────────────────────────

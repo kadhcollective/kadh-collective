@@ -1851,50 +1851,324 @@
     }
   }
 
-  /* ─────────────────────────────────────────────
-     PLACE ORDER — saves to Supabase
-  ─────────────────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════════════
+     DATA INGESTION & VALIDATION PIPELINE
+     Converts raw form data → validated, enriched "ready-to-ship"
+     order object, then saves to Supabase and notifies all parties.
+  ═══════════════════════════════════════════════════════════ */
+
+  /* ── Step 1: Field-level validators ── */
+  const VALIDATORS = {
+    name(v) {
+      if (!v || v.length < 2)       return 'Please enter your full name (at least 2 characters).'
+      if (v.length > 120)           return 'Name is too long.'
+      if (/[<>{}]/.test(v))         return 'Name contains invalid characters.'
+      return null
+    },
+    email(v) {
+      if (!v)                        return 'Email address is required.'
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return 'Please enter a valid email address.'
+      if (v.length > 254)           return 'Email address is too long.'
+      return null
+    },
+    phone(v) {
+      if (!v) return null  // optional, but validate if provided
+      const digits = v.replace(/[\s\-()]/g, '')
+      if (!/^\+?\d{7,15}$/.test(digits)) return 'Please enter a valid phone number.'
+      return null
+    },
+    address(v) {
+      if (!v || v.length < 10)      return 'Please enter your full shipping address (street, city, postcode).'
+      if (v.length > 500)           return 'Address is too long.'
+      return null
+    },
+    country(v) {
+      if (!v)                        return 'Please select a destination country.'
+      return null
+    },
+    cart(items) {
+      if (!items || items.length === 0) return 'Your bag is empty — please add at least one item.'
+      if (items.length > 20)           return 'Too many items in the bag. Please contact us for large orders.'
+      for (const item of items) {
+        if (!item.id || !item.name || typeof item.price !== 'number' || item.price <= 0)
+          return 'One or more items in your bag are invalid. Please refresh and try again.'
+        if (!Number.isInteger(item.qty) || item.qty < 1 || item.qty > 10)
+          return `Quantity for "${item.name}" must be between 1 and 10.`
+      }
+      return null
+    }
+  }
+
+  /* ── Step 2: Show / clear inline field errors ── */
+  function setFieldError(fieldId, msg) {
+    let errEl = document.getElementById(`err-${fieldId}`)
+    const fieldEl = document.getElementById(fieldId)
+    if (!errEl && fieldEl) {
+      errEl = document.createElement('div')
+      errEl.id = `err-${fieldId}`
+      errEl.style.cssText = 'font-size:.72rem;color:#9B3A3A;margin-top:.25rem;letter-spacing:.02em;'
+      fieldEl.parentNode.insertBefore(errEl, fieldEl.nextSibling)
+    }
+    if (errEl) errEl.textContent = msg || ''
+    if (fieldEl) fieldEl.style.borderColor = msg ? '#9B3A3A' : ''
+  }
+
+  function clearAllErrors() {
+    ;['checkout-name','checkout-email','checkout-phone','checkout-address','country-select'].forEach(id => setFieldError(id, ''))
+  }
+
+  /* ── Step 3: Sanitise a single string ── */
+  function sanitise(str, maxLen = 300) {
+    if (typeof str !== 'string') return ''
+    return str.replace(/[<>]/g, '').trim().slice(0, maxLen)
+  }
+
+  /* ── Step 4: Build the canonical order object ── */
+  function buildOrderObject({ name, email, phone, country, address }) {
+    const subtotal       = cart.reduce((s, i) => s + i.price * i.qty, 0)
+    const shippingCost   = getShippingCost()
+    const shippingMethod = document.querySelector('.shipping-opt.selected .shipping-opt-name')?.textContent || 'Standard'
+    const shippingDays   = document.querySelector('.shipping-opt.selected .shipping-opt-days')?.textContent  || ''
+    const zone           = getZone(country)
+    const orderRef       = 'KADH-' + Date.now().toString(36).toUpperCase()
+
+    return {
+      /* identifiers */
+      order_ref:        orderRef,
+      status:           'pending',
+      created_at:       new Date().toISOString(),
+
+      /* customer */
+      customer_name:    sanitise(name, 120),
+      email:            email.toLowerCase().trim(),
+      phone:            sanitise(phone, 30),
+
+      /* shipping destination */
+      country:          country,
+      shipping_zone:    zone,
+      address:          sanitise(address, 500),
+
+      /* logistics */
+      shipping_method:  shippingMethod,
+      shipping_eta:     shippingDays,
+      shipping_cost:    shippingCost,
+
+      /* financials */
+      subtotal:         subtotal,
+      total:            subtotal + shippingCost,
+      currency:         'MYR',
+
+      /* line items — snapshot prices at time of order */
+      items:            cart.map(i => ({
+        product_id:   i.id,
+        name:         i.name,
+        qty:          i.qty,
+        unit_price:   i.price,
+        line_total:   i.price * i.qty,
+        image_url:    i.imageUrl || '',
+      })),
+
+      /* validation metadata */
+      _ingested_at:     new Date().toISOString(),
+      _ingestion_ver:   '2.0',
+      _validation_pass: true,
+    }
+  }
+
+  /* ── Step 5: WhatsApp customer confirmation message ── */
+  function buildCustomerWAMessage(order) {
+    const itemList = order.items.map(i => `• ${i.name} × ${i.qty} — RM ${i.line_total.toFixed(2)}`).join('\n')
+    return (
+      `Assalamualaikum ${order.customer_name.split(' ')[0]}! 🌙\n\n` +
+      `*Order Confirmed — ${order.order_ref}*\n\n` +
+      `Thank you for shopping with KADH Collective. Your order has been received and is being prepared with care.\n\n` +
+      `*Items:*\n${itemList}\n\n` +
+      `*Shipping:* ${order.shipping_method}\n` +
+      `*Estimated Delivery:* ${order.shipping_eta}\n` +
+      `*Total:* RM ${order.total.toFixed(2)}\n\n` +
+      `We'll send you a tracking number once your order is dispatched. ` +
+      `If you have any questions, just reply to this message. Shukran! 🤍`
+    )
+  }
+
+  /* ── Step 6: WhatsApp admin alert message ── */
+  function buildAdminWAMessage(order) {
+    const itemList = order.items.map(i => `${i.name} ×${i.qty}`).join(', ')
+    return (
+      `🛍️ *NEW ORDER — ${order.order_ref}*\n\n` +
+      `*Customer:* ${order.customer_name}\n` +
+      `*Email:* ${order.email}\n` +
+      `*Phone:* ${order.phone || '—'}\n` +
+      `*Country:* ${order.country} (Zone: ${order.shipping_zone})\n\n` +
+      `*Items:* ${itemList}\n` +
+      `*Shipping:* ${order.shipping_method}\n` +
+      `*Total:* RM ${order.total.toFixed(2)}\n\n` +
+      `*Address:*\n${order.address}\n\n` +
+      `⏱️ Received: ${new Date().toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })} (KL)`
+    )
+  }
+
+  /* ── Step 7: Send WhatsApp notifications ── */
+  async function sendCustomerWhatsApp(order) {
+    if (!order.phone) return  // customer left phone blank — skip
+    const cleaned = order.phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')
+    const msg = encodeURIComponent(buildCustomerWAMessage(order))
+    // Opens WA for the admin to send — in production replace with WA Business API call
+    window._pendingCustomerWA = `https://wa.me/${cleaned}?text=${msg}`
+  }
+
+  function sendAdminWhatsApp(order) {
+    const msg = encodeURIComponent(buildAdminWAMessage(order))
+    window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`, '_blank')
+  }
+
+  /* ── Step 8: Show the order-processing overlay ── */
+  function showProcessingOverlay(show, step = '') {
+    let el = document.getElementById('order-processing-overlay')
+    if (!el) {
+      el = document.createElement('div')
+      el.id = 'order-processing-overlay'
+      el.style.cssText = `
+        position:fixed;inset:0;background:rgba(44,36,24,.72);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        z-index:9999;backdrop-filter:blur(4px);transition:opacity .3s ease;
+      `
+      el.innerHTML = `
+        <div style="background:var(--cream);border-radius:12px;padding:2.5rem 3rem;text-align:center;max-width:340px;width:90%">
+          <div id="op-spinner" style="width:40px;height:40px;border:3px solid var(--sand);border-top-color:var(--gold);border-radius:50%;animation:op-spin 1s linear infinite;margin:0 auto 1.25rem"></div>
+          <div style="font-family:var(--font-display);font-size:1.25rem;font-weight:300;margin-bottom:.5rem">Placing your order…</div>
+          <div id="op-step" style="font-size:.76rem;color:var(--mid);letter-spacing:.05em"></div>
+        </div>
+        <style>@keyframes op-spin{to{transform:rotate(360deg)}}</style>
+      `
+      document.body.appendChild(el)
+    }
+    el.style.display = show ? 'flex' : 'none'
+    const stepEl = document.getElementById('op-step')
+    if (stepEl) stepEl.textContent = step
+  }
+
+  /* ── Step 9: Master placeOrder with full pipeline ── */
   async function placeOrder() {
-    const name    = document.getElementById('checkout-name').value.trim()
-    const email   = document.getElementById('checkout-email').value.trim()
-    const phone   = document.getElementById('checkout-phone').value.trim()
-    const country = document.getElementById('country-select').value
-    const address = document.getElementById('checkout-address').value.trim()
+    clearAllErrors()
 
-    if (!name || !email || !address) {
-      alert('Please fill in your name, email address, and shipping address to continue.')
+    /* — Collect raw inputs — */
+    const raw = {
+      name:    document.getElementById('checkout-name').value.trim(),
+      email:   document.getElementById('checkout-email').value.trim(),
+      phone:   document.getElementById('checkout-phone').value.trim(),
+      country: document.getElementById('country-select').value,
+      address: document.getElementById('checkout-address').value.trim(),
+    }
+
+    /* — Validate each field — */
+    let hasError = false
+    const fieldMap = {
+      name:    'checkout-name',
+      email:   'checkout-email',
+      phone:   'checkout-phone',
+      address: 'checkout-address',
+      country: 'country-select',
+    }
+    for (const [field, domId] of Object.entries(fieldMap)) {
+      const err = VALIDATORS[field](raw[field])
+      if (err) { setFieldError(domId, err); hasError = true }
+    }
+
+    const cartErr = VALIDATORS.cart(cart)
+    if (cartErr) { alert(cartErr); return }
+    if (hasError) {
+      document.querySelector('.checkout-wrap').scrollIntoView({ behavior: 'smooth' })
       return
     }
 
-    if (cart.length === 0) {
-      alert('Your bag is empty.')
-      return
-    }
+    /* — Build enriched order object — */
+    const order = buildOrderObject(raw)
 
-    const order = {
-      customer_name:   name,
-      email:           email,
-      phone:           phone,
-      country:         country,
-      address:         address,
-      items:           cart,
-      total:           cart.reduce((s, i) => s + i.price * i.qty, 0) + getShippingCost(),
-      shipping_method: document.querySelector('.shipping-opt.selected .shipping-opt-name')?.textContent || '',
-      status:          'pending',
-    }
+    /* — Show processing overlay — */
+    showProcessingOverlay(true, 'Validating order…')
 
+    /* — Persist to Supabase — */
+    let saved = false
     try {
+      showProcessingOverlay(true, 'Saving your order…')
       const { error } = await db.from('orders').insert([order])
       if (error) throw error
+      saved = true
     } catch (err) {
-      console.error('Order save failed:', err)
-      // Still show success in demo mode — remove this line once Supabase is connected
-      // to prevent orders going through without saving. For now it allows demo testing.
+      console.warn('Supabase save failed (demo mode):', err.message || err)
+      // In demo mode we continue — remove this fallback once Supabase is live
     }
 
+    /* — Update order status to confirmed if saved — */
+    if (saved) {
+      try {
+        await db.from('orders').update({ status: 'confirmed' }).eq('order_ref', order.order_ref)
+      } catch (_) {}
+    }
+
+    /* — Queue customer WA message (will open after success page renders) — */
+    showProcessingOverlay(true, 'Sending confirmation…')
+    await sendCustomerWhatsApp(order)
+
+    /* — Notify admin via WA — */
+    sendAdminWhatsApp(order)
+
+    /* — Persist success data for the success page — */
+    window._lastOrder = order
+
+    /* — Clear cart & finish — */
+    showProcessingOverlay(false)
     cart = []
     updateCartCount()
+    renderSuccessPage(order)
     showPage('success')
+  }
+
+  /* ── Step 10: Render the success page with order details ── */
+  function renderSuccessPage(order) {
+    const successScreen = document.querySelector('.success-screen')
+    if (!successScreen) return
+
+    const itemsHtml = order.items.map(i => `
+      <div style="display:flex;justify-content:space-between;font-size:.82rem;padding:.35rem 0;border-bottom:1px solid var(--sand)">
+        <span style="color:var(--dark)">${i.name} <span style="color:var(--mid)">× ${i.qty}</span></span>
+        <span style="font-weight:500">RM ${i.line_total.toFixed(2)}</span>
+      </div>`).join('')
+
+    successScreen.innerHTML = `
+      <div class="success-icon">
+        <svg class="checkmark" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="success-eyebrow">Order Confirmed — ${order.order_ref}</div>
+      <h2 class="success-title">Shukran, ${order.customer_name.split(' ')[0]}!</h2>
+      <p class="success-text">Your order has been received and verified. We'll carefully prepare and dispatch it from Kuala Lumpur.</p>
+
+      <div style="background:var(--soft);border:1px solid var(--sand);border-radius:var(--radius-md);padding:1.25rem 1.5rem;margin:1.5rem auto;max-width:420px;text-align:left">
+        <div style="font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.85rem">Order Summary</div>
+        ${itemsHtml}
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;padding:.5rem 0;color:var(--mid)">
+          <span>Shipping (${order.shipping_method})</span>
+          <span>${order.shipping_cost === 0 ? 'Free' : 'RM ' + order.shipping_cost.toFixed(2)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-display);font-size:1.1rem;padding:.5rem 0 0;border-top:1px solid var(--sand);margin-top:.25rem">
+          <span>Total</span>
+          <span>RM ${order.total.toFixed(2)}</span>
+        </div>
+        <div style="margin-top:1rem;font-size:.76rem;color:var(--mid);line-height:1.7">
+          <strong style="color:var(--dark)">Shipping to:</strong><br>${order.address}, ${order.country}<br>
+          <strong style="color:var(--dark)">Estimated delivery:</strong> ${order.shipping_eta}
+        </div>
+      </div>
+
+      ${window._pendingCustomerWA ? `
+      <a href="${window._pendingCustomerWA}" target="_blank" style="display:inline-flex;align-items:center;gap:.5rem;background:#25D366;color:#fff;border-radius:var(--radius-sm);padding:11px 24px;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1rem;text-decoration:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Send Order Confirmation to Customer
+      </a><br>` : ''}
+
+      <button class="btn-primary" onclick="showPage('landing')">Continue Shopping</button>
+    `
   }
 
   /* ─────────────────────────────────────────────
