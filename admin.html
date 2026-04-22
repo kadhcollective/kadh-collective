@@ -726,6 +726,7 @@
                   <th>Shipping</th>
                   <th>Validation</th>
                   <th>Status</th>
+                  <th>EasyParcel</th>
                   <th>Received</th>
                   <th>Actions</th>
                 </tr>
@@ -912,6 +913,54 @@
       ─────────────────────────────────────── -->
       <div class="panel" id="panel-settings">
         <div class="settings-grid">
+
+          <!-- EasyParcel API Settings -->
+          <div class="card settings-full">
+            <div class="card-title">EasyParcel Integration</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+              <div class="field-group">
+                <label class="field-label">API Key</label>
+                <input class="field-input" id="s-ep-key" type="password" placeholder="EP-xxxxxxxxxxxx" value="">
+                <div style="font-size:.7rem;color:var(--mid);margin-top:.3rem">Get from EasyParcel Dashboard → Settings → API</div>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Environment</label>
+                <select class="field-input" id="s-ep-env">
+                  <option value="sandbox">Sandbox (testing)</option>
+                  <option value="live">Live (production)</option>
+                </select>
+              </div>
+            </div>
+            <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem">Sender / Pickup Address</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+              <div class="field-group">
+                <label class="field-label">Company Name</label>
+                <input class="field-input" id="s-ep-company" type="text" placeholder="KADH Collective">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Phone</label>
+                <input class="field-input" id="s-ep-phone" type="text" placeholder="60183977367">
+              </div>
+              <div class="field-group" style="grid-column:1/-1">
+                <label class="field-label">Address Line 1</label>
+                <input class="field-input" id="s-ep-addr" type="text" placeholder="Street address">
+              </div>
+              <div class="field-group">
+                <label class="field-label">City</label>
+                <input class="field-input" id="s-ep-city" type="text" placeholder="Kuala Lumpur">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Postcode</label>
+                <input class="field-input" id="s-ep-postcode" type="text" placeholder="50000">
+              </div>
+            </div>
+            <div style="display:flex;gap:.75rem;margin-top:.75rem;flex-wrap:wrap;align-items:center">
+              <button class="btn btn-dark" onclick="saveEPSettings()">Save EasyParcel Config</button>
+              <button class="btn btn-ghost" onclick="testEPConnection()">Test Connection</button>
+              <span id="ep-test-result" style="font-size:.76rem;color:var(--mid)"></span>
+            </div>
+          </div>
+
           <div class="card settings-full">
             <div class="card-title">Hero Section</div>
             <div class="field-group">
@@ -962,7 +1011,8 @@
           </div>
         </div>
         <div style="margin-top:1.5rem;display:flex;gap:.75rem;justify-content:flex-end">
-          <button class="btn btn-ghost" onclick="loadSettings()">↺ Reset</button>
+          <button class="btn btn-ghost" onclick="loadSettings()
+  loadEPSettings()">↺ Reset</button>
           <button class="btn btn-dark" onclick="saveSettings()">Save Settings</button>
         </div>
       </div>
@@ -2494,6 +2544,11 @@ function renderIngestionTable(orders) {
       ? `<button class="btn btn-sm btn-dark" onclick="ingShip('${escAttr(o.order_ref||o.id)}')">Mark Shipped</button>`
       : ''
 
+    const epStatus = o.ep_awb
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:.68rem;background:#D1ECF1;color:#0C5460;padding:2px 8px;border-radius:10px;font-weight:500">✓ AWB</span>`
+      : o.ep_parcel_id
+      ? `<span style="font-size:.68rem;color:var(--mid)">Booked</span>`
+      : `<span style="font-size:.68rem;color:var(--sand)">—</span>`
     return `<tr onclick="openIngDrawer('${escAttr(o.order_ref||String(o.id))}')" style="cursor:pointer">
       <td><span style="font-family:monospace;font-size:.76rem">${escHtml(o.order_ref || '#'+o.id)}</span></td>
       <td>
@@ -2506,6 +2561,7 @@ function renderIngestionTable(orders) {
       <td style="font-size:.76rem;color:var(--mid)">${escHtml(o.shipping_method||'—')}</td>
       <td>${validIcon} ${ver}</td>
       <td>${statusBadge(o.status)}</td>
+      <td onclick="event.stopPropagation()">${epStatus}</td>
       <td style="font-size:.74rem;color:var(--mid)">${dateStr}</td>
       <td onclick="event.stopPropagation()" style="white-space:nowrap">${actionBtns}</td>
     </tr>`
@@ -2622,6 +2678,17 @@ function openIngDrawer(ref) {
         </div>
       </div>
     </div>
+    <!-- EasyParcel Section -->
+    <div style="margin-bottom:1.25rem" id="ep-section-${escAttr(o.order_ref||String(o.id))}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">
+        <div style="font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">EasyParcel Fulfillment</div>
+        ${!o.ep_parcel_id ? `<button class="btn btn-sm btn-dark" onclick="epGetRates('${escAttr(o.order_ref||String(o.id))}')">⚡ Get Courier Rates</button>` : ''}
+      </div>
+      <div id="ep-panel-${escAttr(o.order_ref||String(o.id))}" style="background:var(--soft);border:1px solid var(--sand);border-radius:var(--radius-md);padding:.85rem 1rem">
+        ${o.ep_awb ? epAwbBlock(o) : o.ep_parcel_id ? epBookedBlock(o) : epIdleBlock(o)}
+      </div>
+    </div>
+
     <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
       ${o.status === 'pending'   ? `<button class="btn btn-sm btn-success" onclick="ingConfirm('${escAttr(o.order_ref||o.id)}');closeIngDrawer()">✓ Confirm</button>` : ''}
       ${o.status === 'confirmed' ? `<button class="btn btn-sm btn-dark" onclick="ingShip('${escAttr(o.order_ref||o.id)}');closeIngDrawer()">Mark Shipped</button>` : ''}
@@ -2636,6 +2703,720 @@ function openIngDrawer(ref) {
   document.getElementById('ing-drawer-bg').style.display = 'block'
 }
 
+
+
+/* ══════════════════════════════════════════════════════════════
+   EASYPARCEL FULFILLMENT ENGINE
+   Full handoff: Rate fetch → Courier select → Shipment booking
+   → AWB generation → Label print
+   Docs: https://developers.easyparcel.com/
+   ══════════════════════════════════════════════════════════════
+
+   CONFIGURATION — replace with your live keys from
+   EasyParcel Dashboard → Settings → API
+   ────────────────────────────────────────────────────────────── */
+const EP_CONFIG = {
+  api_key:    'YOUR_EASYPARCEL_API_KEY',   // ← replace
+  sandbox:    true,                         // ← set false for production
+  sender: {
+    name:     'KADH Collective',
+    company:  'KADH Collective',
+    phone:    '60183977367',
+    email:    'hello@kadhcollective.com',
+    address1: 'Your Street Address',        // ← replace
+    address2: '',
+    city:     'Kuala Lumpur',
+    postcode: '50000',
+    state:    'Kuala Lumpur',
+    country:  'MY',
+  }
+}
+
+function epBase() {
+  return EP_CONFIG.sandbox
+    ? 'https://demo.easyparcel.com/api/v3'
+    : 'https://api.easyparcel.com/api/v3'
+}
+
+/* ── Country → EasyParcel country code map ── */
+const EP_COUNTRY_MAP = {
+  MY:'MY', SG:'SG', ID:'ID',
+  AE:'AE', SA:'SA', QA:'QA', KW:'KW', BH:'BH', OM:'OM',
+  GB:'GB', DE:'DE', FR:'FR', NL:'NL', IT:'IT', ES:'ES',
+  AU:'AU', US:'US',
+}
+function toEpCountry(code) { return EP_COUNTRY_MAP[code] || code }
+
+/* ── Parse postcode from free-text address ── */
+function extractPostcode(address, country) {
+  if (!address) return ''
+  // MY/SG: 5-digit
+  const m5 = address.match(/\b(\d{5})\b/)
+  if (m5) return m5[1]
+  // UK: alphanum
+  const mUK = address.match(/([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2})/i)
+  if (mUK) return mUK[1].replace(/\s+/g, '')
+  return ''
+}
+
+/* ── Estimate total weight from items ── */
+function estimateWeight(items) {
+  // Each abaya ~0.8kg; minimum 0.5kg
+  const total = (items || []).reduce((s, i) => s + (i.qty || 1) * 0.8, 0)
+  return Math.max(0.5, parseFloat(total.toFixed(2)))
+}
+
+/* ── Helper: POST to EasyParcel ── */
+async function epPost(endpoint, body) {
+  const url = `${epBase()}${endpoint}`
+  const payload = { api_key: EP_CONFIG.api_key, ...body }
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(`EasyParcel HTTP ${res.status}`)
+  return res.json()
+}
+
+/* ─────────────────────────────────────────────────────────────
+   STEP 1 — Get courier rates (EP Check Rates)
+────────────────────────────────────────────────────────────── */
+async function epGetRates(ref) {
+  const o = allIngestionOrders.find(x => (x.order_ref || String(x.id)) === ref)
+  if (!o) return
+  const panelId = `ep-panel-${ref}`
+  const panel   = document.getElementById(panelId)
+  if (panel) panel.innerHTML = epLoadingHTML('Fetching courier rates…')
+
+  const weight   = estimateWeight(o.items)
+  const toPost   = extractPostcode(o.address, o.country)
+  const toCountry= toEpCountry(o.country)
+
+  /* Build rate-check payload */
+  const ratePayload = {
+    shipper: {
+      name:     EP_CONFIG.sender.name,
+      phone:    EP_CONFIG.sender.phone,
+      postcode: EP_CONFIG.sender.postcode,
+      state:    EP_CONFIG.sender.state,
+      country:  EP_CONFIG.sender.country,
+    },
+    recipient: {
+      name:    o.customer_name || 'Customer',
+      phone:   o.phone || '',
+      postcode: toPost,
+      country: toCountry,
+    },
+    parcel: {
+      weight: weight,
+      length: 35, width: 25, height: 5,
+      content: 'Modest Abaya',
+      value:   parseFloat((o.total || 0).toFixed(2)),
+      currency:'MYR',
+    },
+  }
+
+  try {
+    /* ── DEMO MODE: simulate rates when sandbox key is placeholder ── */
+    let rates
+    if (EP_CONFIG.api_key === 'YOUR_EASYPARCEL_API_KEY') {
+      rates = epMockRates(o.country, weight)
+    } else {
+      const data = await epPost('/shipment/rates', ratePayload)
+      rates = (data.rates || data.data || [])
+    }
+
+    o._ep_rate_payload = ratePayload
+    o._ep_rates = rates
+    if (panel) panel.innerHTML = epRatesHTML(ref, rates, weight)
+
+  } catch (err) {
+    if (panel) panel.innerHTML = epErrorHTML('Could not fetch rates: ' + (err.message || err))
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   STEP 2 — Book shipment with selected courier
+────────────────────────────────────────────────────────────── */
+async function epBookShipment(ref, rateId) {
+  const o = allIngestionOrders.find(x => (x.order_ref || String(x.id)) === ref)
+  if (!o || !o._ep_rates) return
+  const panelId = `ep-panel-${ref}`
+  const panel   = document.getElementById(panelId)
+  if (panel) panel.innerHTML = epLoadingHTML('Booking shipment with courier…')
+
+  const rate     = o._ep_rates.find(r => (r.id || r.rate_id || r.service_id) === rateId) || o._ep_rates[0]
+  const weight   = estimateWeight(o.items)
+  const toPost   = extractPostcode(o.address, o.country)
+  const items    = Array.isArray(o.items) ? o.items : []
+  const contentDesc = items.map(i => `${i.name||'Abaya'} x${i.qty||1}`).slice(0,3).join(', ')
+
+  const shipPayload = {
+    service_id: rate.id || rate.rate_id || rate.service_id,
+    shipper: {
+      ...EP_CONFIG.sender,
+    },
+    recipient: {
+      name:     o.customer_name || 'Customer',
+      phone:    (o.phone || '').replace(/[\s\-()]/g,''),
+      email:    o.email || '',
+      address1: (o.address || '').slice(0, 80),
+      address2: '',
+      city:     '',
+      postcode: toPost,
+      state:    '',
+      country:  toEpCountry(o.country),
+    },
+    parcel: {
+      weight:  weight,
+      length:  35, width: 25, height: 5,
+      content: contentDesc || 'Modest Abaya',
+      value:   parseFloat((o.total || 0).toFixed(2)),
+      currency:'MYR',
+      ref:     o.order_ref || String(o.id),
+    },
+    cod:         false,
+    insurance:   false,
+    pickup_date: epNextPickupDate(),
+  }
+
+  try {
+    let parcelId, trackingNo, courierName
+
+    if (EP_CONFIG.api_key === 'YOUR_EASYPARCEL_API_KEY') {
+      /* Demo mode — simulate booking */
+      parcelId   = 'EP-DEMO-' + Math.random().toString(36).slice(2,9).toUpperCase()
+      trackingNo = 'EP' + Date.now().toString().slice(-10)
+      courierName= rate.courier_name || rate.name || 'Pos Laju'
+    } else {
+      const data  = await epPost('/shipment/book', shipPayload)
+      const result= data.data || data
+      parcelId    = result.parcel_id  || result.id
+      trackingNo  = result.tracking_no|| result.tracking_number || ''
+      courierName = result.courier_name || rate.courier_name || ''
+    }
+
+    /* Persist to order object */
+    o.ep_parcel_id   = parcelId
+    o.ep_tracking_no = trackingNo
+    o.ep_courier     = courierName
+    o.ep_rate        = rate
+    o._ep_ship_payload = shipPayload
+
+    /* Persist to Supabase */
+    try {
+      await db.from('orders').update({
+        ep_parcel_id:   parcelId,
+        ep_tracking_no: trackingNo,
+        ep_courier:     courierName,
+      }).eq('order_ref', o.order_ref || String(o.id))
+    } catch(_) {}
+
+    if (panel) panel.innerHTML = epBookedBlock(o)
+    addAudit({ action: `Booked EasyParcel shipment <strong>${parcelId}</strong> for order ${ref}`, type: 'success' })
+    showToast(`Shipment booked — ${parcelId}`)
+    renderIngestionTable(filteredIngestionOrders)
+
+  } catch (err) {
+    if (panel) panel.innerHTML = epErrorHTML('Booking failed: ' + (err.message || err))
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   STEP 3 — Generate AWB (Air Waybill)
+────────────────────────────────────────────────────────────── */
+async function epGenerateAWB(ref) {
+  const o = allIngestionOrders.find(x => (x.order_ref || String(x.id)) === ref)
+  if (!o || !o.ep_parcel_id) return
+  const panelId = `ep-panel-${ref}`
+  const panel   = document.getElementById(panelId)
+  if (panel) panel.innerHTML = epLoadingHTML('Generating Air Waybill (AWB)…')
+
+  try {
+    let awbUrl, awbCode
+
+    if (EP_CONFIG.api_key === 'YOUR_EASYPARCEL_API_KEY') {
+      /* Demo: build a mock AWB label URL via data URI */
+      awbCode = o.ep_tracking_no || ('EP' + Date.now().toString().slice(-10))
+      awbUrl  = null  // will render inline
+    } else {
+      const data = await epPost('/shipment/awb', { parcel_id: o.ep_parcel_id })
+      awbUrl  = (data.data || data).awb_url || (data.data || data).label_url
+      awbCode = o.ep_tracking_no
+    }
+
+    o.ep_awb      = awbCode
+    o.ep_awb_url  = awbUrl
+
+    /* Persist */
+    try {
+      await db.from('orders').update({ ep_awb: awbCode, ep_awb_url: awbUrl || '' }).eq('order_ref', o.order_ref || String(o.id))
+    } catch(_) {}
+
+    if (panel) panel.innerHTML = epAwbBlock(o)
+    addAudit({ action: `AWB generated <strong>${awbCode}</strong> for order ${ref}`, type: 'success' })
+    showToast(`AWB ready — ${awbCode}`)
+    renderIngestionTable(filteredIngestionOrders)
+
+  } catch(err) {
+    if (panel) panel.innerHTML = epErrorHTML('AWB generation failed: ' + (err.message || err))
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   STEP 4 — Print AWB label
+   Opens a print-ready A6 label in a new window
+────────────────────────────────────────────────────────────── */
+function epPrintAWB(ref) {
+  const o = allIngestionOrders.find(x => (x.order_ref || String(x.id)) === ref)
+  if (!o) return
+
+  /* If EasyParcel returned a direct label PDF URL, open it */
+  if (o.ep_awb_url && o.ep_awb_url.startsWith('http')) {
+    window.open(o.ep_awb_url, '_blank')
+    addAudit({ action: `Opened AWB label PDF for order ${ref}`, type: 'info' })
+    return
+  }
+
+  /* Otherwise render an A6 label in-browser */
+  const items    = Array.isArray(o.items) ? o.items : []
+  const toPost   = extractPostcode(o.address, o.country)
+  const weight   = estimateWeight(items)
+  const now      = new Date().toLocaleString('en-MY', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+
+  /* Generate a Code128-style barcode SVG using simple bars */
+  function barcodeSVG(code) {
+    const bars = [...code].map(c => c.charCodeAt(0))
+    const totalBars = 60
+    const bw = 2
+    let x = 0, rects = ''
+    for (let i = 0; i < totalBars; i++) {
+      const w = (bars[i % bars.length] % 3) + 1
+      if (i % 2 === 0) rects += `<rect x="${x}" y="0" width="${w * bw}" height="40" fill="#1a1a1a"/>`
+      x += (w * bw) + 1
+    }
+    return `<svg viewBox="0 0 ${x} 40" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:220px;height:40px">${rects}</svg>`
+  }
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AWB — ${escHtml(o.ep_awb||'')}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;700&display=swap');
+
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+  html, body {
+    background: #fff;
+    font-family: 'Jost', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* A6 label: 105mm × 148mm at 96dpi ≈ 397 × 559px */
+  .label {
+    width: 397px;
+    min-height: 559px;
+    margin: 0 auto;
+    border: 2px solid #1a1a1a;
+    display: flex;
+    flex-direction: column;
+    font-size: 11px;
+    page-break-inside: avoid;
+  }
+
+  /* HEADER BAND */
+  .label-header {
+    background: #2C2418;
+    color: #FAF7F2;
+    padding: 10px 14px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .label-brand {
+    font-size: 15px;
+    letter-spacing: .12em;
+    font-weight: 300;
+  }
+  .label-brand span { color: #B8965A; }
+  .label-service {
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: rgba(250,247,242,.6);
+    text-align: right;
+  }
+  .label-service strong { color: #B8965A; display: block; font-size: 12px; }
+
+  /* TRACKING BAND */
+  .label-tracking {
+    background: #F4EDE3;
+    border-bottom: 2px solid #1a1a1a;
+    border-top: 1px solid #E8DFD0;
+    padding: 10px 14px;
+    text-align: center;
+  }
+  .label-awb-num {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: #1a1a1a;
+    font-family: monospace;
+  }
+  .label-awb-sub {
+    font-size: 9px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: #6B5D4F;
+    margin-top: 2px;
+  }
+  .label-barcode {
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* BODY */
+  .label-body {
+    flex: 1;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .addr-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px dashed #E8DFD0;
+  }
+  .addr-block {
+    padding: 10px 14px;
+  }
+  .addr-block:first-child {
+    border-right: 1px dashed #E8DFD0;
+  }
+  .addr-type {
+    font-size: 8px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: #B8965A;
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+  .addr-name { font-weight: 600; font-size: 12px; margin-bottom: 2px; }
+  .addr-detail { font-size: 10px; color: #4a3f35; line-height: 1.55; }
+
+  /* PARCEL INFO */
+  .parcel-row {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px dashed #E8DFD0;
+  }
+  .parcel-cell {
+    flex: 1;
+    padding: 7px 12px;
+    border-right: 1px dashed #E8DFD0;
+  }
+  .parcel-cell:last-child { border-right: none; }
+  .parcel-key {
+    font-size: 8px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #6B5D4F;
+    margin-bottom: 2px;
+  }
+  .parcel-val {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  /* CONTENT & ORDER REF */
+  .label-content-row {
+    padding: 8px 14px;
+    border-bottom: 1px dashed #E8DFD0;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .content-group { flex: 1; min-width: 100px; }
+  .content-key {
+    font-size: 8px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #6B5D4F;
+    margin-bottom: 2px;
+  }
+  .content-val { font-size: 10px; color: #1a1a1a; }
+
+  /* FOOTER */
+  .label-footer {
+    background: #2C2418;
+    color: rgba(250,247,242,.45);
+    padding: 6px 14px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    letter-spacing: .05em;
+  }
+
+  @media print {
+    body { margin: 0; }
+    .label { border: 1.5px solid #000; margin: 0; width: 105mm; min-height: 148mm; }
+    .label-awb-num { font-size: 18px; }
+    @page { size: A6; margin: 4mm; }
+  }
+</style>
+</head>
+<body>
+<div class="label">
+
+  <!-- HEADER -->
+  <div class="label-header">
+    <div class="label-brand">KADH <span>COLLECTIVE</span></div>
+    <div class="label-service">
+      <strong>${escHtml(o.ep_courier||'Pos Laju')}</strong>
+      ${escHtml(o.shipping_method||'Standard')}
+    </div>
+  </div>
+
+  <!-- TRACKING -->
+  <div class="label-tracking">
+    <div class="label-awb-num">${escHtml(o.ep_awb||o.ep_tracking_no||'—')}</div>
+    <div class="label-awb-sub">Air Waybill / Tracking Number</div>
+    <div class="label-barcode">${barcodeSVG(o.ep_awb||o.ep_tracking_no||'KADH')}</div>
+  </div>
+
+  <!-- ADDRESSES -->
+  <div class="label-body">
+    <div class="addr-row">
+      <div class="addr-block">
+        <div class="addr-type">From</div>
+        <div class="addr-name">${escHtml(EP_CONFIG.sender.name)}</div>
+        <div class="addr-detail">
+          ${escHtml(EP_CONFIG.sender.address1)}<br>
+          ${escHtml(EP_CONFIG.sender.city)}, ${escHtml(EP_CONFIG.sender.postcode)}<br>
+          ${escHtml(EP_CONFIG.sender.country)}<br>
+          ${escHtml(EP_CONFIG.sender.phone)}
+        </div>
+      </div>
+      <div class="addr-block">
+        <div class="addr-type">To</div>
+        <div class="addr-name">${escHtml(o.customer_name||'—')}</div>
+        <div class="addr-detail">
+          ${escHtml((o.address||'').slice(0,80))}<br>
+          ${toPost ? escHtml(toPost)+'<br>' : ''}
+          ${escHtml(o.country||'')}<br>
+          ${escHtml(o.phone||'')}
+        </div>
+      </div>
+    </div>
+
+    <!-- PARCEL SPECS -->
+    <div class="parcel-row">
+      <div class="parcel-cell">
+        <div class="parcel-key">Weight</div>
+        <div class="parcel-val">${weight} kg</div>
+      </div>
+      <div class="parcel-cell">
+        <div class="parcel-key">Dimensions</div>
+        <div class="parcel-val">35×25×5 cm</div>
+      </div>
+      <div class="parcel-cell">
+        <div class="parcel-key">Value</div>
+        <div class="parcel-val">RM ${Number(o.total||0).toFixed(2)}</div>
+      </div>
+      <div class="parcel-cell">
+        <div class="parcel-key">COD</div>
+        <div class="parcel-val">No</div>
+      </div>
+    </div>
+
+    <!-- CONTENT + REF -->
+    <div class="label-content-row">
+      <div class="content-group">
+        <div class="content-key">Contents</div>
+        <div class="content-val">${escHtml(items.slice(0,2).map(i=>`${i.name||'Abaya'} ×${i.qty||1}`).join(', '))}</div>
+      </div>
+      <div class="content-group">
+        <div class="content-key">Order Ref</div>
+        <div class="content-val" style="font-family:monospace">${escHtml(o.order_ref||'—')}</div>
+      </div>
+      <div class="content-group">
+        <div class="content-key">ETA</div>
+        <div class="content-val">${escHtml(o.shipping_eta||'—')}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="label-footer">
+    <span>Printed: ${now}</span>
+    <span>${escHtml(EP_CONFIG.sender.email)}</span>
+  </div>
+
+</div>
+<script>
+  window.addEventListener('load', () => setTimeout(() => window.print(), 300))
+<\/script>
+</body>
+</html>`
+
+  const win = window.open('', '_blank', 'width=500,height=700')
+  if (!win) { showToast('Pop-up blocked — allow pop-ups and retry'); return }
+  win.document.open()
+  win.document.write(html)
+  win.document.close()
+
+  addAudit({ action: `Printed AWB label for order <strong>${ref}</strong>`, type: 'info' })
+  showToast('AWB label opened for printing')
+}
+
+/* ─────────────────────────────────────────────────────────────
+   UI BLOCK RENDERERS
+────────────────────────────────────────────────────────────── */
+function epIdleBlock(o) {
+  return `<div style="text-align:center;padding:1rem 0">
+    <div style="font-size:1.5rem;margin-bottom:.5rem">📦</div>
+    <div style="font-size:.8rem;color:var(--mid);margin-bottom:.75rem">No shipment booked yet for this order.</div>
+    <button class="btn btn-sm btn-dark" onclick="epGetRates('${escAttr(o.order_ref||String(o.id))}')">
+      ⚡ Fetch EasyParcel Courier Rates
+    </button>
+  </div>`
+}
+
+function epRatesHTML(ref, rates, weight) {
+  if (!rates || rates.length === 0) {
+    return `<div style="font-size:.8rem;color:var(--mid);text-align:center;padding:.75rem">No courier rates available for this destination.</div>`
+  }
+  const rows = rates.slice(0, 6).map((r, i) => {
+    const name   = r.courier_name || r.name || r.service_name || 'Courier'
+    const price  = r.price != null ? 'RM ' + Number(r.price).toFixed(2) : r.total_price != null ? 'RM ' + Number(r.total_price).toFixed(2) : '—'
+    const eta    = r.estimated_delivery || r.delivery_time || r.days || '3–7 days'
+    const rateId = r.id || r.rate_id || r.service_id || i
+    const logo   = r.logo_url ? `<img src="${escAttr(r.logo_url)}" style="height:18px;object-fit:contain;margin-right:6px" onerror="this.style.display='none'">` : ''
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .75rem;border:1px solid var(--sand);border-radius:var(--radius-sm);margin-bottom:.4rem;background:var(--white)">
+        <div style="display:flex;align-items:center;gap:.4rem;flex:1">
+          ${logo}
+          <div>
+            <div style="font-size:.82rem;font-weight:500">${escHtml(name)}</div>
+            <div style="font-size:.7rem;color:var(--mid)">${escHtml(String(eta))}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.6rem">
+          <span style="font-weight:600;font-size:.88rem">${price}</span>
+          <button class="btn btn-sm btn-dark" onclick="epBookShipment('${escAttr(ref)}','${escAttr(String(rateId))}')">
+            Book
+          </button>
+        </div>
+      </div>`
+  }).join('')
+
+  return `
+    <div style="font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--mid);margin-bottom:.6rem">
+      Available Couriers · ${weight} kg parcel
+    </div>
+    ${rows}
+    <div style="font-size:.7rem;color:var(--mid);margin-top:.5rem">
+      ${EP_CONFIG.sandbox ? '⚠️ Sandbox mode — rates are simulated' : 'Live rates from EasyParcel'}
+    </div>`
+}
+
+function epBookedBlock(o) {
+  return `
+    <div style="display:flex;flex-direction:column;gap:.5rem">
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span style="font-size:1rem">📬</span>
+        <span style="font-size:.82rem;font-weight:500;color:var(--dark)">Shipment Booked</span>
+        <span style="font-size:.68rem;background:#D1ECF1;color:#0C5460;padding:2px 8px;border-radius:10px;margin-left:auto">Pending AWB</span>
+      </div>
+      <div style="font-size:.76rem;display:grid;grid-template-columns:1fr 1fr;gap:.3rem .75rem">
+        <div style="color:var(--mid)">Parcel ID</div>
+        <div style="font-family:monospace">${escHtml(o.ep_parcel_id||'—')}</div>
+        <div style="color:var(--mid)">Tracking No</div>
+        <div style="font-family:monospace">${escHtml(o.ep_tracking_no||'Pending')}</div>
+        <div style="color:var(--mid)">Courier</div>
+        <div>${escHtml(o.ep_courier||'—')}</div>
+        <div style="color:var(--mid)">Service</div>
+        <div>${escHtml(o.shipping_method||'Standard')}</div>
+      </div>
+      <button class="btn btn-sm btn-gold" style="align-self:flex-start;margin-top:.25rem" onclick="epGenerateAWB('${escAttr(o.order_ref||String(o.id))}')">
+        🏷 Generate AWB
+      </button>
+    </div>`
+}
+
+function epAwbBlock(o) {
+  return `
+    <div style="display:flex;flex-direction:column;gap:.6rem">
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span style="font-size:1rem">🏷️</span>
+        <span style="font-size:.82rem;font-weight:500;color:var(--dark)">AWB Generated</span>
+        <span style="font-size:.68rem;background:#D4EDDA;color:#155724;padding:2px 8px;border-radius:10px;margin-left:auto;font-weight:600">✓ Ready to Ship</span>
+      </div>
+      <div style="background:var(--white);border:1px solid var(--sand);border-radius:var(--radius-sm);padding:.65rem .85rem">
+        <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:.35rem">Air Waybill Number</div>
+        <div style="font-family:monospace;font-size:1.05rem;font-weight:700;letter-spacing:.06em;color:var(--dark)">${escHtml(o.ep_awb||'—')}</div>
+      </div>
+      <div style="font-size:.76rem;display:grid;grid-template-columns:1fr 1fr;gap:.3rem .75rem">
+        <div style="color:var(--mid)">Courier</div><div>${escHtml(o.ep_courier||'—')}</div>
+        <div style="color:var(--mid)">Parcel ID</div><div style="font-family:monospace">${escHtml(o.ep_parcel_id||'—')}</div>
+        <div style="color:var(--mid)">ETA</div><div>${escHtml(o.shipping_eta||'—')}</div>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.1rem">
+        <button class="btn btn-sm btn-dark" onclick="epPrintAWB('${escAttr(o.order_ref||String(o.id))}')">
+          🖨 Print AWB Label
+        </button>
+        ${o.ep_awb_url ? `<a href="${escAttr(o.ep_awb_url)}" target="_blank" class="btn btn-sm btn-ghost">↓ Download PDF</a>` : ''}
+        <button class="btn btn-sm btn-ghost" onclick="epGetRates('${escAttr(o.order_ref||String(o.id))}')">Rebook</button>
+      </div>
+    </div>`
+}
+
+function epLoadingHTML(msg) {
+  return `<div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;font-size:.8rem;color:var(--mid)">
+    <span class="spinner"></span>${escHtml(msg)}
+  </div>`
+}
+
+function epErrorHTML(msg) {
+  return `<div style="font-size:.78rem;color:var(--danger);padding:.4rem 0">⚠️ ${escHtml(msg)}</div>`
+}
+
+/* ── Mock rates for sandbox/demo ── */
+function epMockRates(country, weight) {
+  const base = { MY:'MY', SG:'SG', ID:'ID' }[country] || 'INT'
+  const couriers = {
+    MY: [
+      { id:'poslaju',  courier_name:'Pos Laju',    price: weight <= 1 ? 7.50  : 10.00, estimated_delivery:'2–4 business days'  },
+      { id:'jnt',      courier_name:'J&T Express', price: weight <= 1 ? 6.00  : 8.50,  estimated_delivery:'2–3 business days'  },
+      { id:'gdex',     courier_name:'GDEX',         price: weight <= 1 ? 8.00  : 11.00, estimated_delivery:'1–2 business days'  },
+      { id:'dhl_my',   courier_name:'DHL Express',  price: weight <= 1 ? 18.00 : 22.00, estimated_delivery:'Next business day'  },
+    ],
+    SG: [
+      { id:'dhl_sg',   courier_name:'DHL Express',  price: 28.00, estimated_delivery:'2–3 business days' },
+      { id:'fedex_sg', courier_name:'FedEx',         price: 32.00, estimated_delivery:'1–2 business days' },
+    ],
+    INT: [
+      { id:'dhl_int',  courier_name:'DHL International', price: 65.00, estimated_delivery:'5–10 business days' },
+      { id:'fedex_int',courier_name:'FedEx International',price:78.00, estimated_delivery:'3–7 business days'  },
+      { id:'aramex',   courier_name:'Aramex',         price: 55.00, estimated_delivery:'5–8 business days'  },
+    ],
+  }
+  return (couriers[base] || couriers.INT).map(r => ({ ...r, logo_url: '' }))
+}
+
+/* ── Next valid pickup date (skip weekends) ── */
+function epNextPickupDate() {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1)
+  return d.toISOString().slice(0, 10)
+}
 
 /* ══════════════════════════════════════════════════
    RECEIPT GENERATOR — client-side PDF via print
@@ -3078,6 +3859,59 @@ function downloadReceipt(ref) {
 function closeIngDrawer() {
   document.getElementById('ing-drawer').style.right = '-480px'
   document.getElementById('ing-drawer-bg').style.display = 'none'
+}
+
+
+/* ──────────────────────────────
+   EASYPARCEL SETTINGS
+────────────────────────────── */
+function loadEPSettings() {
+  const saved = JSON.parse(localStorage.getItem('kadh_ep_config') || '{}')
+  if (saved.api_key)   { document.getElementById('s-ep-key').value     = saved.api_key;  EP_CONFIG.api_key  = saved.api_key  }
+  if (saved.sandbox != null) { document.getElementById('s-ep-env').value = saved.sandbox ? 'sandbox' : 'live'; EP_CONFIG.sandbox = saved.sandbox }
+  if (saved.company)   { document.getElementById('s-ep-company').value  = saved.company; EP_CONFIG.sender.company = saved.company; EP_CONFIG.sender.name = saved.company }
+  if (saved.phone)     { document.getElementById('s-ep-phone').value    = saved.phone;   EP_CONFIG.sender.phone   = saved.phone    }
+  if (saved.addr)      { document.getElementById('s-ep-addr').value     = saved.addr;    EP_CONFIG.sender.address1= saved.addr    }
+  if (saved.city)      { document.getElementById('s-ep-city').value     = saved.city;    EP_CONFIG.sender.city    = saved.city    }
+  if (saved.postcode)  { document.getElementById('s-ep-postcode').value = saved.postcode;EP_CONFIG.sender.postcode= saved.postcode}
+}
+
+function saveEPSettings() {
+  const cfg = {
+    api_key:  document.getElementById('s-ep-key').value.trim(),
+    sandbox:  document.getElementById('s-ep-env').value === 'sandbox',
+    company:  document.getElementById('s-ep-company').value.trim(),
+    phone:    document.getElementById('s-ep-phone').value.trim(),
+    addr:     document.getElementById('s-ep-addr').value.trim(),
+    city:     document.getElementById('s-ep-city').value.trim(),
+    postcode: document.getElementById('s-ep-postcode').value.trim(),
+  }
+  localStorage.setItem('kadh_ep_config', JSON.stringify(cfg))
+  EP_CONFIG.api_key         = cfg.api_key
+  EP_CONFIG.sandbox         = cfg.sandbox
+  EP_CONFIG.sender.name     = cfg.company
+  EP_CONFIG.sender.company  = cfg.company
+  EP_CONFIG.sender.phone    = cfg.phone
+  EP_CONFIG.sender.address1 = cfg.addr
+  EP_CONFIG.sender.city     = cfg.city
+  EP_CONFIG.sender.postcode = cfg.postcode
+  addAudit({ action: 'Updated EasyParcel API config', type: 'info' })
+  showToast('EasyParcel config saved ✓')
+}
+
+async function testEPConnection() {
+  const el = document.getElementById('ep-test-result')
+  if (el) el.textContent = 'Testing…'
+  try {
+    if (EP_CONFIG.api_key === 'YOUR_EASYPARCEL_API_KEY' || !EP_CONFIG.api_key) {
+      if (el) { el.textContent = '⚠️ Demo mode — enter your API key to test live connection'; el.style.color = 'var(--warn)' }
+      return
+    }
+    const data = await epPost('/account/balance', {})
+    if (el) { el.textContent = `✓ Connected — Balance: ${data.balance || data.data?.balance || 'OK'}`; el.style.color = 'var(--success)' }
+  } catch(e) {
+    if (el) { el.textContent = '✗ Connection failed: ' + e.message; el.style.color = 'var(--danger)' }
+  }
 }
 
 /* ──────────────────────────────
