@@ -651,13 +651,14 @@
                   <th>Product</th>
                   <th>Price (RM)</th>
                   <th>Badge</th>
-                  <th>Stock</th>
+                  <th>Stock Status</th>
+                  <th>Stock Count</th>
                   <th>Variants</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="products-tbody">
-                <tr><td colspan="6"><div class="loading"><span class="spinner"></span>Loading…</div></td></tr>
+                <tr><td colspan="7"><div class="loading"><span class="spinner"></span>Loading…</div></td></tr>
               </tbody>
             </table>
           </div>
@@ -938,6 +939,10 @@
         <div class="field-group" style="display:flex;align-items:center;gap:.6rem">
           <input class="field-input" id="pm-in-stock" type="checkbox" style="width:auto">
           <label class="field-label" style="margin:0">In Stock</label>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Stock Count</label>
+          <input class="field-input" id="pm-stock-count" type="number" placeholder="0" min="0">
         </div>
         <div class="field-group">
           <label class="field-label">Low Stock Threshold</label>
@@ -1573,17 +1578,22 @@ function switchChartType(type, btn) {
 }
 
 async function renderLowStock(prods) {
-  // Fetch fresh stock data or use cached products
-  const { data: products } = await db.from('products').select('id, name, in_stock, low_stock_threshold, variants')
+  // Fetch fresh stock data
+  const { data: products } = await db.from('products').select('id, name, in_stock, stock_count, low_stock_threshold, variants')
   const list   = document.getElementById('low-stock-list')
   const badge  = document.getElementById('low-stock-count')
   if (!products) { list.innerHTML = '<li style="font-size:.8rem;color:var(--mid);padding:.5rem 0">No data</li>'; return }
 
+  const threshold = (p) => p.low_stock_threshold || 5
+
   const alerts = products.filter(p => {
     if (!p.in_stock) return true
+    // Use stock_count if available
+    if (p.stock_count != null) return p.stock_count <= threshold(p)
+    // Fall back to variants qty
     if (p.variants && Array.isArray(p.variants)) {
       const totalQty = p.variants.reduce((s, v) => s + (v.qty || 0), 0)
-      return totalQty <= (p.low_stock_threshold || 5)
+      return totalQty <= threshold(p)
     }
     return false
   }).slice(0, 8)
@@ -1596,9 +1606,14 @@ async function renderLowStock(prods) {
   }
 
   list.innerHTML = alerts.map(p => {
-    const qty = p.variants
-      ? p.variants.reduce((s,v) => s + (v.qty || 0), 0)
-      : (p.in_stock ? '?' : 0)
+    let qty
+    if (p.stock_count != null) {
+      qty = p.stock_count
+    } else if (p.variants && Array.isArray(p.variants)) {
+      qty = p.variants.reduce((s,v) => s + (v.qty || 0), 0)
+    } else {
+      qty = p.in_stock ? '?' : 0
+    }
     const cls = (qty === 0 || !p.in_stock) ? 'out' : 'low'
     return `<li class="low-stock-item">
       <span class="lsi-name">${escHtml(p.name)}</span>
@@ -1620,12 +1635,24 @@ async function loadProducts() {
 function renderProductsTable(products) {
   const tbody = document.getElementById('products-tbody')
   if (!products.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">◻</div>No products yet</div></td></tr>`
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">◻</div>No products yet</div></td></tr>`
     return
   }
   tbody.innerHTML = products.map(p => {
     const imgs     = Array.isArray(p.images) ? p.images : []
     const varCount = Array.isArray(p.variants) ? p.variants.length : 0
+    const stockNum = (p.stock_count != null) ? p.stock_count : null
+    const threshold = p.low_stock_threshold || 5
+    let stockCell
+    if (stockNum === null) {
+      stockCell = '<span style="font-size:.78rem;color:var(--mid)">—</span>'
+    } else if (!p.in_stock || stockNum === 0) {
+      stockCell = `<span class="badge badge-outstock">${stockNum}</span>`
+    } else if (stockNum <= threshold) {
+      stockCell = `<span class="badge" style="background:#FFF3CD;color:#856404">${stockNum} low</span>`
+    } else {
+      stockCell = `<span style="font-size:.82rem;font-weight:500;color:var(--success)">${stockNum}</span>`
+    }
     return `<tr>
       <td>
         <div style="display:flex;align-items:center;gap:.75rem">
@@ -1639,6 +1666,7 @@ function renderProductsTable(products) {
       <td>RM ${(p.price || 0).toFixed(2)}</td>
       <td>${p.badge ? `<span class="badge badge-confirmed">${escHtml(p.badge)}</span>` : '—'}</td>
       <td>${p.in_stock ? '<span class="badge badge-instock">In Stock</span>' : '<span class="badge badge-outstock">Out</span>'}</td>
+      <td>${stockCell}</td>
       <td><span style="font-size:.78rem;color:var(--mid)">${varCount > 0 ? varCount + ' variant' + (varCount > 1 ? 's' : '') : '—'}</span></td>
       <td>
         <div style="display:flex;gap:.4rem">
@@ -1670,6 +1698,7 @@ function openProductModal(id) {
   document.getElementById('pm-length').value = ''
   document.getElementById('pm-sleeve').value = ''
   document.getElementById('pm-in-stock').checked = true
+  document.getElementById('pm-stock-count').value = ''
   document.getElementById('pm-low-stock').value = ''
   document.getElementById('pm-images-list').innerHTML = ''
   document.getElementById('pm-variants-list').innerHTML = ''
@@ -1686,6 +1715,7 @@ function openProductModal(id) {
       document.getElementById('pm-length').value        = p.length_cm || ''
       document.getElementById('pm-sleeve').value        = p.sleeve_cm || ''
       document.getElementById('pm-in-stock').checked    = !!p.in_stock
+      document.getElementById('pm-stock-count').value   = p.stock_count != null ? p.stock_count : ''
       document.getElementById('pm-low-stock').value     = p.low_stock_threshold || ''
       const imgs = Array.isArray(p.images) ? p.images : []
       imgs.forEach(url => addImageUrlRow(url))
@@ -1727,6 +1757,7 @@ async function saveProduct() {
     length_cm:          document.getElementById('pm-length').value.trim(),
     sleeve_cm:          document.getElementById('pm-sleeve').value.trim(),
     in_stock:           document.getElementById('pm-in-stock').checked,
+    stock_count:        parseInt(document.getElementById('pm-stock-count').value) || 0,
     low_stock_threshold: parseInt(document.getElementById('pm-low-stock').value) || 5,
     images,
     variants,
