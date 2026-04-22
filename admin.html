@@ -2622,15 +2622,457 @@ function openIngDrawer(ref) {
         </div>
       </div>
     </div>
-    <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
       ${o.status === 'pending'   ? `<button class="btn btn-sm btn-success" onclick="ingConfirm('${escAttr(o.order_ref||o.id)}');closeIngDrawer()">✓ Confirm</button>` : ''}
       ${o.status === 'confirmed' ? `<button class="btn btn-sm btn-dark" onclick="ingShip('${escAttr(o.order_ref||o.id)}');closeIngDrawer()">Mark Shipped</button>` : ''}
       ${o.status !== 'flagged'   ? `<button class="btn btn-sm btn-danger" onclick="ingFlag('${escAttr(o.order_ref||o.id)}');closeIngDrawer()">Flag for Review</button>` : ''}
+      <button class="btn btn-sm btn-outline-dark" style="margin-left:auto" onclick="downloadReceipt('${escAttr(o.order_ref||String(o.id))}')">
+        ↓ Download Receipt
+      </button>
     </div>
   `
 
   document.getElementById('ing-drawer').style.right = '0'
   document.getElementById('ing-drawer-bg').style.display = 'block'
+}
+
+
+/* ══════════════════════════════════════════════════
+   RECEIPT GENERATOR — client-side PDF via print
+   ══════════════════════════════════════════════════ */
+function downloadReceipt(ref) {
+  const o = allIngestionOrders.find(x => (x.order_ref || String(x.id)) === ref)
+  if (!o) { showToast('Order not found'); return }
+
+  const items     = Array.isArray(o.items) ? o.items : []
+  const dateStr   = o.created_at
+    ? new Date(o.created_at).toLocaleString('en-MY', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' })
+    : new Date().toLocaleString('en-MY')
+  const ingDate   = o._ingested_at
+    ? new Date(o._ingested_at).toLocaleString('en-MY', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' })
+    : dateStr
+  const statusLabel = (o.status || 'pending').charAt(0).toUpperCase() + (o.status || 'pending').slice(1)
+
+  const itemRows = items.map(i => `
+    <tr>
+      <td>${escHtml(i.name || String(i))}</td>
+      <td style="text-align:center">${i.qty || 1}</td>
+      <td style="text-align:right">RM ${Number(i.unit_price || i.price || 0).toFixed(2)}</td>
+      <td style="text-align:right">RM ${Number(i.line_total || (i.unit_price||i.price||0) * (i.qty||1)).toFixed(2)}</td>
+    </tr>`).join('')
+
+  const shippingRow = (o.shipping_cost != null && Number(o.shipping_cost) > 0)
+    ? `<tr class="subtotal-row"><td colspan="3">Shipping — ${escHtml(o.shipping_method||'Standard')}</td><td style="text-align:right">RM ${Number(o.shipping_cost).toFixed(2)}</td></tr>`
+    : `<tr class="subtotal-row"><td colspan="3">Shipping — ${escHtml(o.shipping_method||'Standard')}</td><td style="text-align:right">Free</td></tr>`
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Receipt — ${escHtml(o.order_ref||'#'+o.id)}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300&family=Jost:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #FAF7F2;
+    --sand:  #E8DFD0;
+    --dark:  #2C2418;
+    --mid:   #6B5D4F;
+    --gold:  #B8965A;
+  }
+
+  html, body {
+    background: #fff;
+    font-family: 'Jost', sans-serif;
+    font-size: 13px;
+    color: var(--dark);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .receipt {
+    width: 680px;
+    margin: 0 auto;
+    padding: 48px 56px 60px;
+    background: #fff;
+  }
+
+  /* ── HEADER ── */
+  .receipt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid var(--dark);
+    padding-bottom: 24px;
+    margin-bottom: 28px;
+  }
+  .brand-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: .15em;
+    line-height: 1;
+  }
+  .brand-name span { color: var(--gold); }
+  .brand-tagline {
+    font-size: 10px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-top: 4px;
+  }
+  .receipt-label {
+    text-align: right;
+  }
+  .receipt-label-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 300;
+    letter-spacing: .08em;
+    color: var(--dark);
+  }
+  .receipt-label-ref {
+    font-size: 11px;
+    color: var(--mid);
+    letter-spacing: .06em;
+    margin-top: 4px;
+    font-family: monospace;
+  }
+
+  /* ── META ROW ── */
+  .meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    background: var(--cream);
+    border: 1px solid var(--sand);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+  }
+  .meta-item-label {
+    font-size: 9px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 3px;
+  }
+  .meta-item-value {
+    font-size: 12px;
+    color: var(--dark);
+    font-weight: 500;
+  }
+
+  /* ── INGESTION METADATA BOX ── */
+  .ing-meta-box {
+    border: 1px solid var(--sand);
+    border-left: 3px solid var(--gold);
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin-bottom: 28px;
+    background: #FFFDF9;
+  }
+  .ing-meta-title {
+    font-size: 9px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+  .ing-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 24px;
+  }
+  .ing-meta-row {
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
+  }
+  .ing-meta-key {
+    color: var(--mid);
+    min-width: 120px;
+    flex-shrink: 0;
+  }
+  .ing-meta-val {
+    color: var(--dark);
+    font-family: monospace;
+    font-size: 11px;
+  }
+  .ing-pass { color: #3a7c56; font-weight: 600; }
+  .ing-fail { color: #9B3A3A; font-weight: 600; }
+
+  /* ── PARTIES ── */
+  .parties {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+  .party-label {
+    font-size: 9px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .party-name { font-weight: 500; font-size: 13px; }
+  .party-detail { font-size: 11px; color: var(--mid); line-height: 1.7; margin-top: 3px; }
+
+  /* ── ITEMS TABLE ── */
+  .items-section { margin-bottom: 20px; }
+  .items-section-title {
+    font-size: 9px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  thead th {
+    font-size: 9px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--mid);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--dark);
+    text-align: left;
+  }
+  thead th:not(:first-child) { text-align: center; }
+  thead th:last-child { text-align: right; }
+  tbody td {
+    padding: 10px 0;
+    font-size: 12px;
+    border-bottom: 1px solid var(--sand);
+    vertical-align: middle;
+  }
+  .subtotal-row td {
+    padding: 7px 0;
+    font-size: 11px;
+    color: var(--mid);
+    border-bottom: none;
+  }
+
+  /* ── TOTALS ── */
+  .totals-block {
+    margin-top: 4px;
+    border-top: 2px solid var(--dark);
+    padding-top: 12px;
+  }
+  .total-final {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 400;
+    padding-top: 8px;
+  }
+
+  /* ── STATUS BADGE ── */
+  .status-pill {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .status-pending   { background: #FFF3CD; color: #856404; }
+  .status-confirmed { background: #D1ECF1; color: #0C5460; }
+  .status-shipped   { background: #CCE5FF; color: #004085; }
+  .status-delivered { background: #D4EDDA; color: #155724; }
+  .status-flagged   { background: #F8D7DA; color: #721C24; }
+
+  /* ── FOOTER ── */
+  .receipt-footer {
+    margin-top: 40px;
+    border-top: 1px solid var(--sand);
+    padding-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .footer-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: .12em;
+    color: var(--mid);
+  }
+  .footer-brand span { color: var(--gold); }
+  .footer-note {
+    font-size: 10px;
+    color: var(--mid);
+    text-align: right;
+    line-height: 1.6;
+  }
+  .footer-note strong { color: var(--dark); }
+
+  /* ── DIVIDER ── */
+  .ornament {
+    text-align: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 11px;
+    letter-spacing: .4em;
+    color: var(--sand);
+    margin: 20px 0;
+  }
+
+  @media print {
+    body { background: #fff !important; }
+    .receipt { padding: 20px 30px; }
+  }
+</style>
+</head>
+<body>
+<div class="receipt">
+
+  <!-- HEADER -->
+  <div class="receipt-header">
+    <div>
+      <div class="brand-name">KADH <span>COLLECTIVE</span></div>
+      <div class="brand-tagline">Modest Abayas · Ships from Kuala Lumpur</div>
+    </div>
+    <div class="receipt-label">
+      <div class="receipt-label-title">Order Receipt</div>
+      <div class="receipt-label-ref">${escHtml(o.order_ref || '#'+o.id)}</div>
+      <div style="margin-top:6px"><span class="status-pill status-${escHtml(o.status||'pending')}">${statusLabel}</span></div>
+    </div>
+  </div>
+
+  <!-- META ROW -->
+  <div class="meta-grid">
+    <div>
+      <div class="meta-item-label">Order Date</div>
+      <div class="meta-item-value">${dateStr}</div>
+    </div>
+    <div>
+      <div class="meta-item-label">Shipping Method</div>
+      <div class="meta-item-value">${escHtml(o.shipping_method||'Standard')}</div>
+    </div>
+    <div>
+      <div class="meta-item-label">Est. Delivery</div>
+      <div class="meta-item-value">${escHtml(o.shipping_eta||'—')}</div>
+    </div>
+  </div>
+
+  <!-- INGESTION METADATA -->
+  <div class="ing-meta-box">
+    <div class="ing-meta-title">⚡ Ingestion &amp; Validation Metadata</div>
+    <div class="ing-meta-grid">
+      <div class="ing-meta-row">
+        <span class="ing-meta-key">Order Reference</span>
+        <span class="ing-meta-val">${escHtml(o.order_ref||String(o.id))}</span>
+      </div>
+      <div class="ing-meta-row">
+        <span class="ing-meta-key">Ingestion Version</span>
+        <span class="ing-meta-val">v${escHtml(String(o._ingestion_ver||'legacy'))}</span>
+      </div>
+      <div class="ing-meta-row">
+        <span class="ing-meta-key">Validation Pass</span>
+        <span class="ing-meta-val ${o._validation_pass === false ? 'ing-fail' : 'ing-pass'}">${o._validation_pass === false ? '✗  Failed' : '✓  Passed'}</span>
+      </div>
+      <div class="ing-meta-row">
+        <span class="ing-meta-key">Shipping Zone</span>
+        <span class="ing-meta-val">${escHtml(o.shipping_zone||o.country||'—')}</span>
+      </div>
+      <div class="ing-meta-row">
+        <span class="ing-meta-key">Ingested At</span>
+        <span class="ing-meta-val">${ingDate}</span>
+      </div>
+      <div class="ing-meta-row">
+        <span class="ing-meta-key">Currency</span>
+        <span class="ing-meta-val">${escHtml(o.currency||'MYR')}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PARTIES -->
+  <div class="parties">
+    <div>
+      <div class="party-label">Bill To / Ship To</div>
+      <div class="party-name">${escHtml(o.customer_name||'—')}</div>
+      <div class="party-detail">
+        ${escHtml(o.email||'')}<br>
+        ${o.phone ? escHtml(o.phone)+'<br>' : ''}
+        ${escHtml(o.address||'—')}<br>
+        ${escHtml(o.country||'')}
+      </div>
+    </div>
+    <div>
+      <div class="party-label">Dispatched By</div>
+      <div class="party-name">KADH Collective</div>
+      <div class="party-detail">
+        Kuala Lumpur, Malaysia<br>
+        hello@kadhcollective.com<br>
+        wa.me/60183977367
+      </div>
+    </div>
+  </div>
+
+  <!-- ITEMS -->
+  <div class="items-section">
+    <div class="items-section-title">Order Items</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th style="text-align:center">Qty</th>
+          <th style="text-align:right">Unit Price</th>
+          <th style="text-align:right">Line Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemRows}
+        <tr><td colspan="4" style="padding:4px 0;border:none"></td></tr>
+        ${shippingRow}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TOTALS -->
+  <div class="totals-block">
+    <div class="total-final">
+      <span>Total Due</span>
+      <span>RM ${Number(o.total||0).toFixed(2)}</span>
+    </div>
+  </div>
+
+  <div class="ornament">· · · · ·</div>
+
+  <!-- FOOTER -->
+  <div class="receipt-footer">
+    <div class="footer-brand">KADH <span>COLLECTIVE</span></div>
+    <div class="footer-note">
+      <strong>Thank you for your order.</strong><br>
+      Returns accepted within 30 days. Duties may apply for international orders.<br>
+      Questions? WhatsApp us or email hello@kadhcollective.com
+    </div>
+  </div>
+
+</div>
+</body>
+</html>`
+
+  // Open in a new window and trigger print-to-PDF
+  const win = window.open('', '_blank', 'width=800,height=900,scrollbars=yes')
+  if (!win) { showToast('Pop-up blocked — please allow pop-ups and try again'); return }
+  win.document.open()
+  win.document.write(html)
+  win.document.close()
+  win.addEventListener('load', () => {
+    setTimeout(() => win.print(), 400)
+  })
+
+  addAudit({ action: `Downloaded receipt for order <strong>${ref}</strong>`, type: 'info' })
+  showToast('Receipt opened — use "Save as PDF" in the print dialog')
 }
 
 function closeIngDrawer() {
