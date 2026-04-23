@@ -653,6 +653,7 @@
           </div>
           <div style="display:flex;gap:.6rem;flex-wrap:wrap">
             <button class="btn btn-ghost btn-sm" onclick="loadIngestionQueue()">↺ Refresh</button>
+            <button class="btn btn-ghost btn-sm" onclick="epSyncAllTracking()">⟳ Sync All Tracking</button>
             <button class="btn btn-dark btn-sm" onclick="bulkConfirmPending()">✓ Confirm All Pending</button>
           </div>
         </div>
@@ -2852,8 +2853,10 @@ async function epBookShipment(ref, rateId) {
   const items    = Array.isArray(o.items) ? o.items : []
   const contentDesc = items.map(i => `${i.name||'Abaya'} x${i.qty||1}`).slice(0,3).join(', ')
 
+  const handoverType = o.ep_handover || 'pickup'   // 'pickup' | 'dropoff'
   const shipPayload = {
     service_id: rate.id || rate.rate_id || rate.service_id,
+    pickup_type: handoverType === 'pickup' ? 'pickup' : 'dropoff',
     shipper: {
       ...EP_CONFIG.sender,
     },
@@ -2898,10 +2901,14 @@ async function epBookShipment(ref, rateId) {
     }
 
     /* Persist to order object */
+    const pickupDateEl = document.getElementById(`pickup-date-${ref}`)
     o.ep_parcel_id   = parcelId
     o.ep_tracking_no = trackingNo
     o.ep_courier     = courierName
     o.ep_rate        = rate
+    o.ep_pickup_date = pickupDateEl ? pickupDateEl.value : epNextPickupDate()
+    o.ep_track_url   = epBuildTrackUrl(o)
+    o.ep_track_status= 'Booked'
     o._ep_ship_payload = shipPayload
 
     /* Persist to Supabase */
@@ -2910,6 +2917,10 @@ async function epBookShipment(ref, rateId) {
         ep_parcel_id:   parcelId,
         ep_tracking_no: trackingNo,
         ep_courier:     courierName,
+        ep_handover:    o.ep_handover || 'pickup',
+        ep_pickup_date: o.ep_pickup_date,
+        ep_track_url:   o.ep_track_url,
+        ep_track_status:'Booked',
       }).eq('order_ref', o.order_ref || String(o.id))
     } catch(_) {}
 
@@ -3279,13 +3290,49 @@ function epPrintAWB(ref) {
    UI BLOCK RENDERERS
 ────────────────────────────────────────────────────────────── */
 function epIdleBlock(o) {
-  return `<div style="text-align:center;padding:1rem 0">
-    <div style="font-size:1.5rem;margin-bottom:.5rem">📦</div>
-    <div style="font-size:.8rem;color:var(--mid);margin-bottom:.75rem">No shipment booked yet for this order.</div>
-    <button class="btn btn-sm btn-dark" onclick="epGetRates('${escAttr(o.order_ref||String(o.id))}')">
-      ⚡ Fetch EasyParcel Courier Rates
-    </button>
-  </div>`
+  const ref = escAttr(o.order_ref||String(o.id))
+  const savedHandover = o.ep_handover || 'pickup'
+  return `
+    <div style="padding:.25rem 0">
+      <!-- Handover Choice -->
+      <div style="margin-bottom:1rem">
+        <div style="font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem;font-weight:500">
+          Handover Method
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem" id="handover-choice-${ref}">
+          <label style="cursor:pointer">
+            <input type="radio" name="handover-${ref}" value="pickup" ${savedHandover==='pickup'?'checked':''} onchange="epSetHandover('${ref}','pickup')" style="display:none">
+            <div class="handover-opt ${savedHandover==='pickup'?'handover-selected':''}" id="hopt-pickup-${ref}" onclick="epSetHandover('${ref}','pickup')">
+              <div style="font-size:1.1rem;margin-bottom:.25rem">🏍</div>
+              <div style="font-size:.76rem;font-weight:500">Courier Pickup</div>
+              <div style="font-size:.68rem;color:var(--mid);margin-top:.15rem">Rider collects from your address</div>
+            </div>
+          </label>
+          <label style="cursor:pointer">
+            <input type="radio" name="handover-${ref}" value="dropoff" ${savedHandover==='dropoff'?'checked':''} onchange="epSetHandover('${ref}','dropoff')" style="display:none">
+            <div class="handover-opt ${savedHandover==='dropoff'?'handover-selected':''}" id="hopt-dropoff-${ref}" onclick="epSetHandover('${ref}','dropoff')">
+              <div style="font-size:1.1rem;margin-bottom:.25rem">🏪</div>
+              <div style="font-size:.76rem;font-weight:500">Drop-Off Point</div>
+              <div style="font-size:.68rem;color:var(--mid);margin-top:.15rem">You bring to nearest hub</div>
+            </div>
+          </label>
+        </div>
+        <div id="handover-note-${ref}" style="font-size:.7rem;color:var(--mid);margin-top:.45rem;padding:.4rem .6rem;background:var(--soft);border-radius:4px;border-left:2px solid var(--gold)">
+          ${savedHandover==='pickup'
+            ? '⏰ Schedule for next business day pickup. Rider will arrive between 9am–6pm.'
+            : '📍 Drop your parcel at any EasyParcel hub before 3pm for same-day processing.'}
+        </div>
+      </div>
+      <!-- Pickup Date -->
+      <div style="margin-bottom:.85rem" id="pickup-date-row-${ref}" style="display:${savedHandover==='pickup'?'block':'none'}">
+        <div style="font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem">Pickup Date</div>
+        <input type="date" id="pickup-date-${ref}" class="field-input" style="font-size:.8rem;padding:6px 10px;width:100%;max-width:180px"
+          value="${epNextPickupDate()}" min="${epNextPickupDate()}">
+      </div>
+      <button class="btn btn-sm btn-dark" onclick="epGetRates('${ref}')">
+        ⚡ Get Courier Rates
+      </button>
+    </div>`
 }
 
 function epRatesHTML(ref, rates, weight) {
@@ -3327,6 +3374,9 @@ function epRatesHTML(ref, rates, weight) {
 }
 
 function epBookedBlock(o) {
+  const ref = escAttr(o.order_ref||String(o.id))
+  const handoverIcon = o.ep_handover === 'dropoff' ? '🏪' : '🏍'
+  const handoverLabel= o.ep_handover === 'dropoff' ? 'Drop-Off' : 'Courier Pickup'
   return `
     <div style="display:flex;flex-direction:column;gap:.5rem">
       <div style="display:flex;align-items:center;gap:.5rem">
@@ -3341,39 +3391,87 @@ function epBookedBlock(o) {
         <div style="font-family:monospace">${escHtml(o.ep_tracking_no||'Pending')}</div>
         <div style="color:var(--mid)">Courier</div>
         <div>${escHtml(o.ep_courier||'—')}</div>
-        <div style="color:var(--mid)">Service</div>
-        <div>${escHtml(o.shipping_method||'Standard')}</div>
+        <div style="color:var(--mid)">Handover</div>
+        <div>${handoverIcon} ${handoverLabel}</div>
+        ${o.ep_pickup_date ? `<div style="color:var(--mid)">Pickup Date</div><div>${escHtml(o.ep_pickup_date)}</div>` : ''}
       </div>
-      <button class="btn btn-sm btn-gold" style="align-self:flex-start;margin-top:.25rem" onclick="epGenerateAWB('${escAttr(o.order_ref||String(o.id))}')">
+      <button class="btn btn-sm btn-gold" style="align-self:flex-start;margin-top:.25rem" onclick="epGenerateAWB('${ref}')">
         🏷 Generate AWB
       </button>
     </div>`
 }
 
 function epAwbBlock(o) {
+  const ref          = escAttr(o.order_ref||String(o.id))
+  const trackUrl     = o.ep_track_url || epBuildTrackUrl(o)
+  const handoverIcon = o.ep_handover === 'dropoff' ? '🏪' : '🏍'
+  const handoverLabel= o.ep_handover === 'dropoff' ? 'Drop-Off' : 'Courier Pickup'
+  const ofdSent      = o.ep_ofd_sent
+    ? `<span style="font-size:.68rem;color:var(--success)">✓ Alert sent ${new Date(o.ep_ofd_sent).toLocaleTimeString('en-MY',{hour:'2-digit',minute:'2-digit'})}</span>`
+    : `<button class="btn btn-sm btn-outline-dark" onclick="epSendOFDAlert('${ref}')">📲 Send OFD Alert</button>`
+
   return `
-    <div style="display:flex;flex-direction:column;gap:.6rem">
+    <div style="display:flex;flex-direction:column;gap:.7rem">
+
+      <!-- Header -->
       <div style="display:flex;align-items:center;gap:.5rem">
         <span style="font-size:1rem">🏷️</span>
         <span style="font-size:.82rem;font-weight:500;color:var(--dark)">AWB Generated</span>
         <span style="font-size:.68rem;background:#D4EDDA;color:#155724;padding:2px 8px;border-radius:10px;margin-left:auto;font-weight:600">✓ Ready to Ship</span>
       </div>
+
+      <!-- AWB number -->
       <div style="background:var(--white);border:1px solid var(--sand);border-radius:var(--radius-sm);padding:.65rem .85rem">
-        <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:.35rem">Air Waybill Number</div>
+        <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:.25rem">Air Waybill Number</div>
         <div style="font-family:monospace;font-size:1.05rem;font-weight:700;letter-spacing:.06em;color:var(--dark)">${escHtml(o.ep_awb||'—')}</div>
       </div>
+
+      <!-- Tracking link -->
+      <div style="background:var(--soft);border:1px solid var(--sand);border-radius:var(--radius-sm);padding:.65rem .85rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">
+          <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)">Tracking Link</div>
+          <button class="btn btn-sm btn-ghost" style="font-size:.65rem;padding:3px 8px" onclick="epCopyTrackLink('${ref}')">Copy</button>
+        </div>
+        <div style="font-size:.72rem;font-family:monospace;color:var(--dark);word-break:break-all;line-height:1.5" id="track-url-display-${ref}">${escHtml(trackUrl)}</div>
+      </div>
+
+      <!-- Shipment details grid -->
       <div style="font-size:.76rem;display:grid;grid-template-columns:1fr 1fr;gap:.3rem .75rem">
         <div style="color:var(--mid)">Courier</div><div>${escHtml(o.ep_courier||'—')}</div>
         <div style="color:var(--mid)">Parcel ID</div><div style="font-family:monospace">${escHtml(o.ep_parcel_id||'—')}</div>
         <div style="color:var(--mid)">ETA</div><div>${escHtml(o.shipping_eta||'—')}</div>
+        <div style="color:var(--mid)">Handover</div><div>${handoverIcon} ${handoverLabel}</div>
+        <div style="color:var(--mid)">Tracking Status</div>
+        <div id="track-status-${ref}" style="font-weight:500">${escHtml(o.ep_track_status||'Awaiting pickup')}</div>
       </div>
-      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.1rem">
-        <button class="btn btn-sm btn-dark" onclick="epPrintAWB('${escAttr(o.order_ref||String(o.id))}')">
-          🖨 Print AWB Label
+
+      <!-- Tracking sync -->
+      <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+        <button class="btn btn-sm btn-ghost" onclick="epSyncTracking('${ref}')">
+          ↻ Sync Tracking
         </button>
-        ${o.ep_awb_url ? `<a href="${escAttr(o.ep_awb_url)}" target="_blank" class="btn btn-sm btn-ghost">↓ Download PDF</a>` : ''}
-        <button class="btn btn-sm btn-ghost" onclick="epGetRates('${escAttr(o.order_ref||String(o.id))}')">Rebook</button>
+        <span id="track-sync-ts-${ref}" style="font-size:.68rem;color:var(--mid)">
+          ${o.ep_track_synced_at ? 'Last synced ' + new Date(o.ep_track_synced_at).toLocaleTimeString('en-MY',{hour:'2-digit',minute:'2-digit'}) : 'Never synced'}
+        </span>
       </div>
+
+      <!-- Out-for-Delivery alert -->
+      <div style="border-top:1px solid var(--sand);padding-top:.65rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem">
+        <div>
+          <div style="font-size:.72rem;font-weight:500;color:var(--dark)">Out-for-Delivery Alert</div>
+          <div style="font-size:.68rem;color:var(--mid);margin-top:.1rem">WhatsApp customer when parcel is out for delivery</div>
+        </div>
+        ${ofdSent}
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;padding-top:.1rem">
+        <button class="btn btn-sm btn-dark" onclick="epPrintAWB('${ref}')">🖨 Print AWB</button>
+        ${o.ep_awb_url ? `<a href="${escAttr(o.ep_awb_url)}" target="_blank" class="btn btn-sm btn-ghost">↓ PDF</a>` : ''}
+        <button class="btn btn-sm btn-ghost" onclick="epShareTrackLink('${ref}')">📤 Share Link</button>
+        <button class="btn btn-sm btn-ghost" onclick="epGetRates('${ref}')">Rebook</button>
+      </div>
+
     </div>`
 }
 
@@ -3417,6 +3515,307 @@ function epNextPickupDate() {
   while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1)
   return d.toISOString().slice(0, 10)
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   HANDOVER, TRACKING SYNC & OUT-FOR-DELIVERY ENGINE
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Handover choice ── */
+function epSetHandover(ref, type) {
+  const o = allIngestionOrders.find(x => (x.order_ref||String(x.id)) === ref)
+  if (o) o.ep_handover = type
+
+  // Visual toggle
+  const pickup  = document.getElementById(`hopt-pickup-${ref}`)
+  const dropoff = document.getElementById(`hopt-dropoff-${ref}`)
+  if (pickup)  pickup.className  = 'handover-opt' + (type === 'pickup'  ? ' handover-selected' : '')
+  if (dropoff) dropoff.className = 'handover-opt' + (type === 'dropoff' ? ' handover-selected' : '')
+
+  // Update note
+  const note = document.getElementById(`handover-note-${ref}`)
+  if (note) note.innerHTML = type === 'pickup'
+    ? '⏰ Schedule for next business day pickup. Rider will arrive between 9am–6pm.'
+    : '📍 Drop your parcel at any EasyParcel hub before 3pm for same-day processing.'
+
+  // Show/hide pickup date
+  const pickupRow = document.getElementById(`pickup-date-row-${ref}`)
+  if (pickupRow) pickupRow.style.display = type === 'pickup' ? 'block' : 'none'
+
+  // Persist to Supabase quietly
+  if (o) {
+    db.from('orders').update({ ep_handover: type }).eq('order_ref', o.order_ref || String(o.id)).then(() => {})
+  }
+}
+
+/* ── Build tracking URL from courier ── */
+const COURIER_TRACK_URLS = {
+  'Pos Laju':             'https://track.pos.com.my/postal-services-item-tracking-system/?itemIdNos=',
+  'J&T Express':          'https://www.jtexpress.my/index/query/gzquery.html?bills=',
+  'GDEX':                 'https://www.gdexpress.com/official/index.php?controller=tracking&awb=',
+  'DHL Express':          'https://www.dhl.com/my-en/home/tracking/tracking-express.html?submit=1&tracking-id=',
+  'DHL International':    'https://www.dhl.com/my-en/home/tracking/tracking-express.html?submit=1&tracking-id=',
+  'FedEx':                'https://www.fedex.com/fedextrack/?trknbr=',
+  'FedEx International':  'https://www.fedex.com/fedextrack/?trknbr=',
+  'Aramex':               'https://www.aramex.com/us/en/track/results?ShipmentNumber=',
+}
+
+function epBuildTrackUrl(o) {
+  if (o.ep_track_url) return o.ep_track_url
+  const trackNo = o.ep_awb || o.ep_tracking_no
+  if (!trackNo) return ''
+  const courier = o.ep_courier || ''
+  const baseUrl = COURIER_TRACK_URLS[courier]
+  if (baseUrl) return baseUrl + encodeURIComponent(trackNo)
+  // EasyParcel universal tracking page
+  return `https://easyparcel.com/my/en/track/?awb=${encodeURIComponent(trackNo)}`
+}
+
+/* ── Build the KADH-branded tracking page URL ── */
+function epBuildKADHTrackUrl(o) {
+  const base = window.location.origin + window.location.pathname.replace('admin.html','index.html')
+  const ref   = encodeURIComponent(o.order_ref || String(o.id))
+  const awb   = encodeURIComponent(o.ep_awb || o.ep_tracking_no || '')
+  return `${base}#track?ref=${ref}&awb=${awb}`
+}
+
+/* ── Copy tracking link ── */
+function epCopyTrackLink(ref) {
+  const o = allIngestionOrders.find(x => (x.order_ref||String(x.id)) === ref)
+  if (!o) return
+  const url = epBuildTrackUrl(o)
+  navigator.clipboard.writeText(url).then(() => showToast('Tracking link copied ✓'))
+}
+
+/* ── Share tracking link via WhatsApp ── */
+function epShareTrackLink(ref) {
+  const o = allIngestionOrders.find(x => (x.order_ref||String(x.id)) === ref)
+  if (!o) return
+  const trackUrl = epBuildTrackUrl(o)
+  const kadhUrl  = epBuildKADHTrackUrl(o)
+  const msg = encodeURIComponent(
+    `Assalamualaikum ${(o.customer_name||'').split(' ')[0]}! 🌙\n\n` +
+    `Your KADH Collective order *${o.order_ref||'#'+o.id}* has been dispatched! 📦\n\n` +
+    `*Courier:* ${o.ep_courier||'—'}\n` +
+    `*Tracking No:* ${o.ep_awb||o.ep_tracking_no||'—'}\n` +
+    `*Est. Delivery:* ${o.shipping_eta||'—'}\n\n` +
+    `Track your parcel:\n${trackUrl}\n\n` +
+    `Or via your KADH order page:\n${kadhUrl}\n\n` +
+    `Shukran for your patience! 🤍`
+  )
+  const phone = (o.phone||'').replace(/[\s\-()+ ]/g,'')
+  if (phone) {
+    window.open(`https://wa.me/${phone}?text=${msg}`, '_blank')
+    addAudit({ action: `Shared tracking link with customer for order <strong>${ref}</strong>`, type: 'info' })
+  } else {
+    navigator.clipboard.writeText(decodeURIComponent(msg))
+    showToast('No phone on file — message copied to clipboard')
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TRACKING SYNC — polls EasyParcel for status updates
+────────────────────────────────────────────────────────────── */
+const EP_TRACK_STATUSES = [
+  'Booked', 'Pickup Scheduled', 'Picked Up',
+  'In Transit', 'Out for Delivery', 'Delivered', 'Exception'
+]
+
+// Courier-specific status keyword maps
+const EP_STATUS_KEYWORDS = {
+  'out for delivery':  'Out for Delivery',
+  'out_for_delivery':  'Out for Delivery',
+  'with delivery':     'Out for Delivery',
+  'on delivery':       'Out for Delivery',
+  'delivery attempt':  'Out for Delivery',
+  'in transit':        'In Transit',
+  'in_transit':        'In Transit',
+  'transit':           'In Transit',
+  'picked up':         'Picked Up',
+  'pickup':            'Picked Up',
+  'collected':         'Picked Up',
+  'delivered':         'Delivered',
+  'completed':         'Delivered',
+  'exception':         'Exception',
+  'failed':            'Exception',
+  'return':            'Exception',
+}
+
+function normaliseTrackStatus(raw) {
+  if (!raw) return null
+  const lower = raw.toLowerCase()
+  for (const [key, val] of Object.entries(EP_STATUS_KEYWORDS)) {
+    if (lower.includes(key)) return val
+  }
+  return raw
+}
+
+async function epSyncTracking(ref) {
+  const o = allIngestionOrders.find(x => (x.order_ref||String(x.id)) === ref)
+  if (!o || !o.ep_parcel_id) { showToast('No parcel ID — book shipment first'); return }
+
+  const statusEl = document.getElementById(`track-status-${ref}`)
+  const tsEl     = document.getElementById(`track-sync-ts-${ref}`)
+  if (statusEl) statusEl.textContent = '…syncing'
+
+  let newStatus = null
+  let events    = []
+
+  try {
+    if (EP_CONFIG.api_key === 'YOUR_EASYPARCEL_API_KEY') {
+      /* Demo: cycle through statuses to simulate progress */
+      const idx = EP_TRACK_STATUSES.indexOf(o.ep_track_status || 'Booked')
+      newStatus = EP_TRACK_STATUSES[Math.min(idx + 1, EP_TRACK_STATUSES.length - 1)]
+      events = [{
+        timestamp: new Date().toISOString(),
+        status:    newStatus,
+        location:  'Kuala Lumpur Sortation Centre',
+        note:      'Simulated tracking event (demo mode)',
+      }]
+    } else {
+      const data   = await epPost('/shipment/track', { parcel_id: o.ep_parcel_id })
+      const result = data.data || data
+      newStatus    = normaliseTrackStatus(result.status || result.current_status)
+      events       = (result.events || result.tracking_events || []).map(e => ({
+        timestamp: e.date || e.timestamp,
+        status:    normaliseTrackStatus(e.status || e.description) || e.status,
+        location:  e.location || '',
+        note:      e.description || e.remark || '',
+      }))
+    }
+  } catch (err) {
+    if (statusEl) statusEl.textContent = o.ep_track_status || 'Unknown'
+    showToast('Tracking sync failed: ' + (err.message || err))
+    return
+  }
+
+  const now = new Date().toISOString()
+  const prevStatus = o.ep_track_status
+
+  o.ep_track_status    = newStatus || o.ep_track_status
+  o.ep_track_events    = events
+  o.ep_track_synced_at = now
+
+  // Persist to Supabase
+  try {
+    await db.from('orders').update({
+      ep_track_status:    o.ep_track_status,
+      ep_track_events:    JSON.stringify(events),
+      ep_track_synced_at: now,
+    }).eq('order_ref', o.order_ref || String(o.id))
+  } catch(_) {}
+
+  // Update UI inline
+  if (statusEl) statusEl.textContent = o.ep_track_status
+  if (tsEl)     tsEl.textContent     = 'Last synced ' + new Date(now).toLocaleTimeString('en-MY',{hour:'2-digit',minute:'2-digit'})
+
+  // Auto-trigger OFD alert if newly Out for Delivery
+  if (newStatus === 'Out for Delivery' && prevStatus !== 'Out for Delivery') {
+    showToast(`📲 Out for Delivery — sending alert to customer…`)
+    await epSendOFDAlert(ref)
+  }
+
+  // Auto-update order status to 'shipped' if picked up or beyond
+  if (['Picked Up','In Transit','Out for Delivery','Delivered'].includes(newStatus) && o.status === 'confirmed') {
+    await ingUpdateStatus(ref, 'shipped')
+  }
+  if (newStatus === 'Delivered' && o.status !== 'delivered') {
+    await ingUpdateStatus(ref, 'delivered')
+  }
+
+  addAudit({ action: `Tracking synced for <strong>${ref}</strong> — ${o.ep_track_status}`, type: 'info' })
+  showToast(`Tracking updated: ${o.ep_track_status}`)
+}
+
+/* Bulk sync all active shipments */
+async function epSyncAllTracking() {
+  const active = allIngestionOrders.filter(o =>
+    o.ep_parcel_id && !['Delivered','Exception'].includes(o.ep_track_status)
+  )
+  if (!active.length) { showToast('No active shipments to sync'); return }
+  showToast(`Syncing ${active.length} shipments…`)
+  for (const o of active) {
+    await epSyncTracking(o.order_ref || String(o.id))
+    await new Promise(r => setTimeout(r, 300))  // gentle rate limit
+  }
+  showToast(`Sync complete — ${active.length} shipments updated`)
+}
+
+/* ─────────────────────────────────────────────────────────────
+   OUT-FOR-DELIVERY ALERT
+   Sends a branded WhatsApp message + tracking link to customer
+────────────────────────────────────────────────────────────── */
+async function epSendOFDAlert(ref) {
+  const o = allIngestionOrders.find(x => (x.order_ref||String(x.id)) === ref)
+  if (!o) return
+
+  const trackUrl  = epBuildTrackUrl(o)
+  const kadhUrl   = epBuildKADHTrackUrl(o)
+  const firstName = (o.customer_name||'').split(' ')[0] || 'there'
+  const phone     = (o.phone||'').replace(/[\s\-()+ ]/g,'')
+
+  const msg = encodeURIComponent(
+    `Assalamualaikum ${firstName}! 🌙✨\n\n` +
+    `Great news — your KADH Collective parcel is *OUT FOR DELIVERY* today! 🚚\n\n` +
+    `*Order:* ${o.order_ref||'#'+o.id}\n` +
+    `*Courier:* ${o.ep_courier||'—'}\n` +
+    `*Tracking No:* ${o.ep_awb||o.ep_tracking_no||'—'}\n\n` +
+    `Please ensure someone is available to receive your parcel. If you miss the delivery, ` +
+    `the courier will leave a notice at your door.\n\n` +
+    `📦 Track in real time:\n${trackUrl}\n\n` +
+    `Questions? Just reply to this message. Shukran! 🤍\n` +
+    `— KADH Collective`
+  )
+
+  if (!phone) {
+    showToast('No phone number on file for this customer')
+    return
+  }
+
+  window.open(`https://wa.me/${phone}?text=${msg}`, '_blank')
+
+  /* Mark OFD alert sent */
+  const now = new Date().toISOString()
+  o.ep_ofd_sent = now
+  try {
+    await db.from('orders').update({ ep_ofd_sent: now }).eq('order_ref', o.order_ref || String(o.id))
+  } catch(_) {}
+
+  /* Refresh OFD button state in drawer if open */
+  const panel = document.getElementById(`ep-panel-${ref}`)
+  if (panel && o.ep_awb) panel.innerHTML = epAwbBlock(o)
+
+  addAudit({ action: `Out-for-Delivery alert sent to customer for order <strong>${ref}</strong>`, type: 'success' })
+  showToast(`OFD alert sent to ${firstName}`)
+}
+
+/* ── Handover CSS (injected once) ── */
+;(function injectHandoverCSS() {
+  if (document.getElementById('handover-style')) return
+  const s = document.createElement('style')
+  s.id = 'handover-style'
+  s.textContent = `
+    .handover-opt {
+      border: 1px solid var(--sand);
+      border-radius: var(--radius-md);
+      padding: .6rem .75rem;
+      text-align: center;
+      background: var(--white);
+      transition: border-color .15s, background .15s;
+      user-select: none;
+    }
+    .handover-opt:hover {
+      border-color: var(--gold);
+      background: rgba(184,150,90,.04);
+    }
+    .handover-selected {
+      border-color: var(--gold) !important;
+      background: rgba(184,150,90,.08) !important;
+      box-shadow: 0 0 0 2px rgba(184,150,90,.18);
+    }
+  `
+  document.head.appendChild(s)
+})()
 
 /* ══════════════════════════════════════════════════
    RECEIPT GENERATOR — client-side PDF via print
