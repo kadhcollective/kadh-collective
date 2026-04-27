@@ -1,0 +1,76 @@
+# ============================================================
+#  KADH COLLECTIVE — Tracking Sync Cron
+#  .github/workflows/tracking-sync.yml
+#
+#  Runs every 2 hours between 7am and 9pm Kuala Lumpur time
+#  (UTC+8, so 23:00–13:00 UTC).
+#
+#  Also triggerable manually from GitHub → Actions → Run workflow
+#
+#  Required secrets (GitHub repo → Settings → Secrets → Actions):
+#    SUPABASE_URL          your Supabase project URL
+#    SUPABASE_SERVICE_KEY  service_role key from Supabase → Settings → API
+#    EP_API_KEY            EasyParcel API key
+#    EP_SANDBOX            true (testing) or false (live)
+#    RESEND_API_KEY        from resend.com dashboard
+#    META_WA_TOKEN         from Meta Developer Portal (permanent token)
+#    META_WA_PHONE_ID      WhatsApp Business phone number ID
+#    KADH_FROM_EMAIL       e.g. orders@kadhcollective.com
+#    KADH_SHOP_URL         e.g. https://kadhcollective.com
+# ============================================================
+
+name: Tracking Sync
+
+on:
+  schedule:
+    # Runs at these UTC times = 7am, 9am, 11am, 1pm, 3pm, 5pm, 7pm, 9pm KL (UTC+8)
+    - cron: '0 23 * * *'   # 7am KL
+    - cron: '0 1 * * *'    # 9am KL
+    - cron: '0 3 * * *'    # 11am KL
+    - cron: '0 5 * * *'    # 1pm KL
+    - cron: '0 7 * * *'    # 3pm KL
+    - cron: '0 9 * * *'    # 5pm KL
+    - cron: '0 11 * * *'   # 7pm KL
+    - cron: '0 13 * * *'   # 9pm KL
+
+  # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual run'
+        required: false
+        default: 'Manual trigger'
+
+jobs:
+  sync:
+    name: Sync Tracking & Send Notifications
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run tracking sync
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          EP_API_KEY:           ${{ secrets.EP_API_KEY }}
+          EP_SANDBOX:           ${{ secrets.EP_SANDBOX }}
+          RESEND_API_KEY:       ${{ secrets.RESEND_API_KEY }}
+          META_WA_TOKEN:        ${{ secrets.META_WA_TOKEN }}
+          META_WA_PHONE_ID:     ${{ secrets.META_WA_PHONE_ID }}
+          KADH_FROM_EMAIL:      ${{ secrets.KADH_FROM_EMAIL }}
+          KADH_SHOP_URL:        ${{ secrets.KADH_SHOP_URL }}
+        run: node scripts/tracking-sync.js
+
+      - name: Report run time
+        if: always()
+        run: |
+          echo "Sync completed at $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "KL time: $(TZ='Asia/Kuala_Lumpur' date '+%Y-%m-%d %H:%M:%S KL')"
