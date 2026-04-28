@@ -1,0 +1,13 @@
+{
+  "name": "kadh-collective",
+  "version": "2.0.0",
+  "description": "KADH Collective — storefront scripts",
+  "main": "scripts/email.js",
+  "scripts": {
+    "test:email": "node -e \"const {sendReceipt}=require('./scripts/email.js'); sendReceipt({order_ref:'KADH-TEST',customer_name:'Test User',email:process.env.TEST_EMAIL,phone:'60123456789',total:150,subtotal:130,shipping_cost:20,items:[{name:'Kaftan Noir',qty:1,price:130}],shipping_method:'Standard',shipping_eta:'3-5 business days',address:'123 Jalan Test, KL'}).then(r=>console.log('OK',r)).catch(e=>console.error('FAIL',e.message))\""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}
