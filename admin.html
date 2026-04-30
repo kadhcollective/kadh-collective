@@ -489,6 +489,22 @@
       <div id="dash-low-stock"><div class="spinner"></div></div>
     </div>
   </div>
+
+  <!-- Row 2: Revenue Chart + Order Funnel + Audit Log -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;margin-top:1.25rem;">
+    <div class="card revenue-chart">
+      <div class="card-title">Revenue (Monthly)</div>
+      <div id="revenue-chart"></div>
+    </div>
+    <div class="card conversion-funnel">
+      <div class="card-title">Order Funnel</div>
+      <div id="conversion-funnel"></div>
+    </div>
+    <div class="card audit-log">
+      <div class="card-title">Audit Log</div>
+      <div id="audit-log"><div class="spinner"></div></div>
+    </div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -775,6 +791,17 @@
             </div>
           </div>
         </div>
+
+        <!-- Product Variants -->
+        <div class="field-group settings-full" style="margin-top:.5rem;">
+          <label class="field-label" style="margin-bottom:.75rem;">Variants (Size / Colour)</label>
+          <div id="variant-rows"></div>
+          <button type="button" class="btn btn-outline btn-sm" style="margin-top:.4rem;"
+                  onclick="document.getElementById('variant-rows').insertAdjacentHTML('beforeend', buildVariantRow())">
+            + Add Variant
+          </button>
+        </div>
+
       </div>
     </div>
     <div class="modal-footer">
@@ -1094,6 +1121,23 @@ async function loadDashboard() {
         <span>${a.product_name || a.products?.name || '—'}</span>
         <span class="lsi-qty ${a.stock_count===0?'out':'low'}">${a.stock_count===0?'Out of stock':a.stock_count+' left'}</span>
       </div>`).join('')
+  }
+
+  // Sidebar widgets
+  renderFunnelBar()
+  fetchAuditLogs()
+
+  // Revenue chart — monthly buckets from recent orders
+  if (recent && recent.length) {
+    const buckets = {}
+    recent.forEach(o => {
+      const mon = (o.created_at || '').slice(0, 7)
+      buckets[mon] = (buckets[mon] || 0) + (o.total || 0)
+    })
+    const chartData = Object.entries(buckets)
+      .sort(([a],[b]) => a.localeCompare(b))
+      .map(([k, v]) => ({ label: k.slice(5), value: v }))
+    renderRevenueChart(chartData)
   }
 }
 
@@ -1598,5 +1642,6 @@ async function bookEPShipment() {
   }
 }
 </script>
+<script src="sidebar.js"></script>
 </body>
 </html>
