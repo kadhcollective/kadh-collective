@@ -1307,13 +1307,19 @@ async function resendReceipt(ref) {
   if (!confirm(`Re-send receipt to ${o.email}?`)) return
   toast('Re-sending receipt…')
   try {
-    const res = await fetch('/api/resend-receipt', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ order_ref: ref })
+    const res = await fetch(`${SUPA_URL}/functions/v1/send-receipt`, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${SUPA_KEY}`,
+        'apikey':         SUPA_KEY,
+      },
+      body: JSON.stringify({ order_ref: ref }),
     })
+    const body = await res.json().catch(() => ({}))
     if (res.ok) toast('Receipt re-sent to ' + o.email)
-    else toast('Send failed — check email config')
-  } catch(e) { toast('Send failed: ' + e.message) }
+    else        toast('Send failed: ' + (body.error || res.statusText))
+  } catch (e) { toast('Send failed: ' + e.message) }
 }
 
 // ════════════════════════════════════════════════════════════

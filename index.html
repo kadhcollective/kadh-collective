@@ -2087,6 +2087,31 @@
     if (stepEl) stepEl.textContent = step
   }
 
+  /* ── Send receipt email via Supabase Edge Function (Phase 2) ── */
+  async function sendReceiptEmail(orderRef) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/send-receipt`, {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey':         SUPABASE_KEY,
+        },
+        body: JSON.stringify({ order_ref: orderRef }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        console.warn('[receipt-email] failed:', body.error || res.statusText)
+        return false
+      }
+      console.log('[receipt-email] sent →', body.sent_to, '| id:', body.id)
+      return true
+    } catch (err) {
+      console.warn('[receipt-email] network error:', err.message)
+      return false
+    }
+  }
+
   /* ── Step 9: Master placeOrder with full pipeline ── */
   async function placeOrder() {
     clearAllErrors()
@@ -2144,6 +2169,9 @@
       try {
         await db.from('orders').update({ status: 'confirmed' }).eq('order_ref', order.order_ref)
       } catch (_) {}
+
+      /* — Send receipt email (fire-and-forget; logs but does not block UX) — */
+      sendReceiptEmail(order.order_ref)
     }
 
     /* — Queue customer WA message (will open after success page renders) — */
