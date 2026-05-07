@@ -2164,32 +2164,39 @@
       // In demo mode we continue — remove this fallback once Supabase is live
     }
 
-    /* — Update order status to confirmed if saved — */
-    if (saved) {
-      try {
-        await db.from('orders').update({ status: 'confirmed' }).eq('order_ref', order.order_ref)
-      } catch (_) {}
-
-      /* — Send receipt email (fire-and-forget; logs but does not block UX) — */
-      sendReceiptEmail(order.order_ref)
+    if (!saved) {
+      showProcessingOverlay(false)
+      alert('Sorry — we could not save your order. Please try again, or message us on WhatsApp if it keeps happening.')
+      return
     }
 
-    /* — Queue customer WA message (will open after success page renders) — */
-    showProcessingOverlay(true, 'Sending confirmation…')
-    await sendCustomerWhatsApp(order)
-
-    /* — Notify admin via WA — */
-    sendAdminWhatsApp(order)
-
-    /* — Persist success data for the success page — */
+    /* — Cache order locally so we can render success even if webhook lags — */
     window._lastOrder = order
 
-    /* — Clear cart & finish — */
-    showProcessingOverlay(false)
-    cart = []
-    updateCartCount()
-    renderSuccessPage(order)
-    showPage('success')
+    /* — Create Stripe Checkout Session and redirect — */
+    /*    The webhook (stripe-webhook edge fn) will mark the order paid       */
+    /*    and trigger the receipt email once payment completes on Stripe.    */
+    showProcessingOverlay(true, 'Redirecting to secure payment…')
+    try {
+      const sessionResp = await fetch(`${SUPABASE_URL}/functions/v1/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey':         SUPABASE_KEY,
+        },
+        body: JSON.stringify({ order_ref: order.order_ref }),
+      })
+      const sessionBody = await sessionResp.json().catch(() => ({}))
+      if (!sessionResp.ok || !sessionBody.checkout_url) {
+        throw new Error(sessionBody.error || 'Failed to create checkout session')
+      }
+      window.location.href = sessionBody.checkout_url
+    } catch (err) {
+      console.error('[stripe] checkout error:', err)
+      showProcessingOverlay(false)
+      alert('Could not start payment: ' + err.message + '\n\nYour order was saved — please try again or contact us on WhatsApp.')
+    }
   }
 
   /* ── Step 10: Render the success page with order details ── */
@@ -2228,11 +2235,10 @@
         </div>
       </div>
 
-      ${window._pendingCustomerWA ? `
-      <a href="${window._pendingCustomerWA}" target="_blank" style="display:inline-flex;align-items:center;gap:.5rem;background:#25D366;color:#fff;border-radius:var(--radius-sm);padding:11px 24px;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1rem;text-decoration:none">
+      <a href="https://wa.me/${WA_NUMBER}?text=${encodeURIComponent('Hi! I just placed order ' + order.order_ref + ' on KADH Collective. I have a question.')}" target="_blank" style="display:inline-flex;align-items:center;gap:.5rem;background:#25D366;color:#fff;border-radius:var(--radius-sm);padding:11px 24px;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1rem;text-decoration:none">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        Send Order Confirmation to Customer
-      </a><br>` : ''}
+        Message us on WhatsApp
+      </a><br>
 
       <button class="btn-primary" onclick="showPage('landing')">Continue Shopping</button>
     `
@@ -2526,11 +2532,50 @@
     </svg>`
   }
 
+  /* ── Handle return from Stripe Checkout (Phase 3) ── */
+  async function handleStripeReturn() {
+    const params       = new URLSearchParams(window.location.search)
+    const stripeStatus = params.get('stripe')
+    const orderRef     = params.get('order_ref')
+    if (!stripeStatus || !orderRef) return
+
+    /* Clean URL so a refresh does not re-trigger this handler */
+    window.history.replaceState({}, '', window.location.pathname)
+
+    if (stripeStatus === 'success') {
+      /* Poll the order for up to ~7s waiting for the webhook to mark it paid */
+      showProcessingOverlay(true, 'Confirming your payment…')
+      let order = null
+      for (let i = 0; i < 5; i++) {
+        const { data } = await db.from('orders').select('*').eq('order_ref', orderRef).single()
+        if (data?.status === 'paid') { order = data; break }
+        if (data && !order) order = data
+        await new Promise(r => setTimeout(r, 1500))
+      }
+      showProcessingOverlay(false)
+
+      const safeOrder = order || window._lastOrder
+      if (safeOrder) {
+        cart = []
+        updateCartCount()
+        renderSuccessPage(safeOrder)
+        showPage('success')
+      } else {
+        alert('Payment received! Check your email for the receipt. Reference: ' + orderRef)
+        showPage('landing')
+      }
+    } else if (stripeStatus === 'cancelled') {
+      showPage('cart')
+      setTimeout(() => alert('Payment was cancelled. You can try again whenever you are ready.'), 200)
+    }
+  }
+
   /* ─────────────────────────────────────────────
      INITIALISE
   ─────────────────────────────────────────────── */
   loadProducts()
   updateShipping()
+  handleStripeReturn()
 
 
   /* ══════════════════════════════════════════════════════
