@@ -1241,69 +1241,26 @@
         <!-- Payment -->
         <div class="form-section">
           <div class="form-section-title">Payment</div>
-          <div class="pay-tabs">
-            <button class="pay-tab active" onclick="switchPayTab('card', this)">Card</button>
-            <button class="pay-tab" onclick="switchPayTab('wallet', this)">E-Wallets</button>
-            <button class="pay-tab" onclick="switchPayTab('bank', this)">Bank Transfer</button>
-            <button class="pay-tab" onclick="switchPayTab('bnpl', this)">Pay Later</button>
-          </div>
 
-          <div class="pay-panel active" id="panel-card">
-            <div class="card-icons">
+          <div style="background:var(--soft);border:1px solid var(--sand);border-radius:var(--radius-md);padding:1.25rem 1.4rem;margin-bottom:1rem">
+            <p style="margin:0 0 .9rem;font-size:.78rem;color:var(--mid);line-height:1.6">
+              You'll be redirected to our secure payment page to complete your order.
+              Pay with any of the methods below:
+            </p>
+            <div class="card-icons" style="margin:0">
               <span class="card-icon">VISA</span>
               <span class="card-icon">Mastercard</span>
               <span class="card-icon">AMEX</span>
-              <span class="card-icon">JCB</span>
-              <span class="card-icon">UnionPay</span>
-            </div>
-            <div class="form-group">
-              <label>Card Number</label>
-              <input type="text" placeholder="1234 5678 9012 3456" maxlength="19" autocomplete="cc-number">
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Expiry Date</label>
-                <input type="text" placeholder="MM / YY" maxlength="7" autocomplete="cc-exp">
-              </div>
-              <div class="form-group">
-                <label>CVV / CVC</label>
-                <input type="text" placeholder="123" maxlength="4" autocomplete="cc-csc">
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Name on Card</label>
-              <input type="text" placeholder="As printed on card" autocomplete="cc-name">
+              <span class="card-icon">FPX</span>
+              <span class="card-icon">GrabPay</span>
+              <span class="card-icon">Apple Pay</span>
+              <span class="card-icon">Google Pay</span>
             </div>
           </div>
 
-          <div class="pay-panel" id="panel-wallet">
-            <div class="wallet-grid">
-              <div class="wallet-opt selected" onclick="selectWallet(this)"><div class="wallet-dot"></div>PayPal</div>
-              <div class="wallet-opt" onclick="selectWallet(this)"><div class="wallet-dot"></div>Apple Pay</div>
-              <div class="wallet-opt" onclick="selectWallet(this)"><div class="wallet-dot"></div>Google Pay</div>
-              <div class="wallet-opt" onclick="selectWallet(this)"><div class="wallet-dot"></div>Touch 'n Go</div>
-              <div class="wallet-opt" onclick="selectWallet(this)"><div class="wallet-dot"></div>GrabPay</div>
-              <div class="wallet-opt" onclick="selectWallet(this)"><div class="wallet-dot"></div>STC Pay</div>
-            </div>
-            <p style="font-size:.76rem;color:var(--mid);line-height:1.7">You will be redirected to complete payment securely through your chosen wallet.</p>
-          </div>
-
-          <div class="pay-panel" id="panel-bank">
-            <div class="wallet-grid">
-              <div class="wallet-opt selected" onclick="selectWallet(this)"><div class="wallet-dot"></div>FPX (Malaysia)</div>
-              <div class="wallet-opt" onclick="selectWallet(this)"><div class="wallet-dot"></div>PayNow (SG)</div>
-              <div class="wallet-opt" onclick="selectWallet(this)"><div class="wallet-dot"></div>FAST Transfer</div>
-              <div class="wallet-opt" onclick="selectWallet(this)"><div class="wallet-dot"></div>SEPA (Europe)</div>
-            </div>
-            <p style="font-size:.76rem;color:var(--mid);line-height:1.7">Bank transfers are processed within 1–2 business days. Your order will be held until payment is confirmed.</p>
-          </div>
-
-          <div class="pay-panel" id="panel-bnpl">
-            <div class="bnpl-info">
-              Split your purchase into easy instalments with no interest. Available via <strong>Atome</strong>, <strong>hoolah</strong>, or <strong>Tabby</strong> (GCC customers). Eligible orders only — subject to provider approval.
-            </div>
-            <p style="font-size:.73rem;color:var(--mid);line-height:1.6">Available for orders above RM 150 / USD 35.</p>
-          </div>
+          <p style="font-size:.72rem;color:var(--mid);margin:0 0 1rem;line-height:1.5;text-align:center">
+            Pay-later instalments (Atome, Grab PayLater) — coming soon.
+          </p>
         </div>
 
         <button class="btn-primary" style="width:100%;padding:16px;font-size:.82rem;border-radius:var(--radius-md)" onclick="placeOrder()">
