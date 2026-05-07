@@ -758,10 +758,17 @@
           <input class="field-input" id="prod-threshold" type="number" placeholder="3">
         </div>
         <div class="field-group">
-          <label class="field-label">Status</label>
-          <select class="field-input filter-select" id="prod-status" style="background:var(--bg);">
-            <option value="true">Active</option>
+          <label class="field-label">Visibility</label>
+          <select class="field-input filter-select" id="prod-visible" style="background:var(--bg);">
+            <option value="true">Visible on store</option>
             <option value="false">Hidden</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Stock Status</label>
+          <select class="field-input filter-select" id="prod-status" style="background:var(--bg);">
+            <option value="true">In Stock</option>
+            <option value="false">Sold Out</option>
           </select>
         </div>
         <div class="field-group settings-full">
@@ -1166,7 +1173,10 @@ function renderProducts() {
       </td>
       <td style="color:var(--muted);font-size:.8rem;">${p.weight_g ? p.weight_g+'g' : '—'}</td>
       <td style="color:var(--muted);font-size:.8rem;">${p.length_cm?p.length_cm+'×'+p.width_cm+'×'+p.height_cm+' cm':'—'}</td>
-      <td>${badgeHTML(p.in_stock ? 'confirmed' : 'flagged').replace('confirmed','active').replace('flagged','hidden')}<span class="badge ${p.in_stock?'badge-confirmed':'badge-flagged'}">${p.in_stock?'Active':'Hidden'}</span></td>
+      <td>
+        <span class="badge ${p.is_visible !== false ? 'badge-confirmed' : 'badge-flagged'}">${p.is_visible !== false ? 'Visible' : 'Hidden'}</span>
+        <span class="badge ${p.in_stock !== false ? 'badge-shipped' : 'badge-flagged'}" style="margin-left:.25rem;">${p.in_stock !== false ? 'In Stock' : 'Sold Out'}</span>
+      </td>
       <td style="text-align:right;">
         <button class="btn btn-outline btn-xs" onclick="openProductModal(${p.id})">Edit</button>
       </td>
@@ -1181,7 +1191,8 @@ function openProductModal(id) {
   setVal('prod-price',     p?.price     || '')
   setVal('prod-stock',     p?.stock_count ?? '')
   setVal('prod-threshold', p?.low_stock_threshold ?? 3)
-  setVal('prod-status',    p ? String(p.in_stock !== false) : 'true')
+  setVal('prod-visible',   p ? String(p.is_visible !== false) : 'true')
+  setVal('prod-status',    p ? String(p.in_stock   !== false) : 'true')
   setVal('prod-desc',      p?.description || '')
   setVal('prod-weight',    p?.weight_g   || '')
   setVal('prod-length',    p?.length_cm  || '')
@@ -1197,7 +1208,8 @@ async function saveProduct() {
     price:               parseFloat(getVal('prod-price')) || 0,
     stock_count:         parseInt(getVal('prod-stock'))   || 0,
     low_stock_threshold: parseInt(getVal('prod-threshold')) || 3,
-    in_stock:            getVal('prod-status') === 'true',
+    is_visible:          getVal('prod-visible') === 'true',
+    in_stock:            getVal('prod-status')  === 'true',
     description:         getVal('prod-desc'),
     weight_g:            parseInt(getVal('prod-weight'))  || 0,
     length_cm:           parseFloat(getVal('prod-length')) || 0,

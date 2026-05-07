@@ -1763,8 +1763,8 @@
     try {
       const { data, error } = await db
         .from('products')
-        .select('id, name, description, short_description, price, image_url, images, badge, in_stock, length, sleeve, created_at')
-        .eq('in_stock', true)
+        .select('id, name, description, short_description, price, image_url, images, badge, in_stock, stock_count, is_visible, length, sleeve, created_at')
+        .eq('is_visible', true)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -1791,21 +1791,26 @@
 
     grid.innerHTML = products.map((p, i) => {
       const imgs = parseImages(p)
+      const isSoldOut = (p.in_stock === false) || (p.stock_count === 0)
       return `
       <div class="product-card" onclick="openProduct(${p.id})" style="cursor:pointer">
         <div class="product-img">
           ${imgs.length > 0
-            ? `<img src="${imgs[0]}" alt="${p.name}" loading="lazy">`
+            ? `<img src="${imgs[0]}" alt="${p.name}" loading="lazy"${isSoldOut ? ' style="filter:grayscale(0.4);opacity:0.85"' : ''}>`
             : `<div class="product-img-placeholder">${demoSVG(i)}</div>`
           }
-          ${p.badge ? `<div class="product-badge">${p.badge}</div>` : ''}
+          ${isSoldOut
+            ? '<div class="product-badge" style="background:#444;color:#fff;">SOLD OUT</div>'
+            : (p.badge ? `<div class="product-badge">${p.badge}</div>` : '')}
         </div>
         <div class="product-info">
           <div class="product-name">${p.name}</div>
           <div class="product-desc">${p.short_description || p.description || ''}</div>
           <div class="product-footer">
             <div class="product-price">${fmt(p.price)}</div>
-            <button class="add-btn" onclick="event.stopPropagation(); addToCart(${p.id}, '${p.name.replace(/'/g,"\\'")}', ${p.price}, '${imgs[0] || ''}')">Add to Bag</button>
+            ${isSoldOut
+              ? '<button class="add-btn" disabled style="opacity:0.5;cursor:not-allowed" onclick="event.stopPropagation()">Sold Out</button>'
+              : `<button class="add-btn" onclick="event.stopPropagation(); addToCart(${p.id}, '${p.name.replace(/'/g,"\\'")}', ${p.price}, '${imgs[0] || ''}')">Add to Bag</button>`}
           </div>
         </div>
       </div>`
@@ -2355,11 +2360,28 @@
     // Breadcrumb
     document.getElementById('pdp-breadcrumb-name').textContent = product.name
 
-    // Badge
+    // Badge — Sold Out takes precedence over the regular badge
+    const isSoldOut = (product.in_stock === false) || (product.stock_count === 0)
     const badgeRow = document.getElementById('pdp-badge-row')
-    badgeRow.innerHTML = product.badge
-      ? `<span class="pdp-badge">${product.badge}</span>`
-      : ''
+    badgeRow.innerHTML = isSoldOut
+      ? '<span class="pdp-badge" style="background:#444;color:#fff;">Sold Out</span>'
+      : (product.badge ? `<span class="pdp-badge">${product.badge}</span>` : '')
+
+    // Add-to-Bag button — disabled when sold out
+    const pdpBtn = document.getElementById('pdp-add-btn')
+    if (pdpBtn) {
+      if (isSoldOut) {
+        pdpBtn.textContent = 'Sold Out'
+        pdpBtn.disabled    = true
+        pdpBtn.style.opacity = '0.5'
+        pdpBtn.style.cursor  = 'not-allowed'
+      } else {
+        pdpBtn.textContent = 'Add to Bag'
+        pdpBtn.disabled    = false
+        pdpBtn.style.opacity = ''
+        pdpBtn.style.cursor  = ''
+      }
+    }
 
     // Name & price
     document.getElementById('pdp-name').textContent = product.name
@@ -2436,21 +2458,26 @@
     grid.closest('.pdp-related').style.display = ''
     grid.innerHTML = related.map((p, i) => {
       const imgs = parseImages(p)
+      const isSoldOut = (p.in_stock === false) || (p.stock_count === 0)
       return `
         <div class="product-card" onclick="openProduct(${p.id})" style="cursor:pointer">
           <div class="product-img">
             ${imgs.length > 0
-              ? `<img src="${imgs[0]}" alt="${p.name}" loading="lazy">`
+              ? `<img src="${imgs[0]}" alt="${p.name}" loading="lazy"${isSoldOut ? ' style="filter:grayscale(0.4);opacity:0.85"' : ''}>`
               : `<div class="product-img-placeholder">${demoSVG(i)}</div>`
             }
-            ${p.badge ? `<div class="product-badge">${p.badge}</div>` : ''}
+            ${isSoldOut
+              ? '<div class="product-badge" style="background:#444;color:#fff;">SOLD OUT</div>'
+              : (p.badge ? `<div class="product-badge">${p.badge}</div>` : '')}
           </div>
           <div class="product-info">
             <div class="product-name">${p.name}</div>
             <div class="product-desc">${p.short_description || p.description || ''}</div>
             <div class="product-footer">
               <div class="product-price">${fmt(p.price)}</div>
-              <button class="add-btn" onclick="event.stopPropagation(); addToCart(${p.id}, '${p.name.replace(/'/g,"\\'")}', ${p.price}, '${imgs[0] || ''}')">Add to Bag</button>
+              ${isSoldOut
+                ? '<button class="add-btn" disabled style="opacity:0.5;cursor:not-allowed" onclick="event.stopPropagation()">Sold Out</button>'
+                : `<button class="add-btn" onclick="event.stopPropagation(); addToCart(${p.id}, '${p.name.replace(/'/g,"\\'")}', ${p.price}, '${imgs[0] || ''}')">Add to Bag</button>`}
             </div>
           </div>
         </div>`
