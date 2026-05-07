@@ -1564,18 +1564,23 @@
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
   /* ─────────────────────────────────────────────
-     WHATSAPP CONFIGURATION
-     Replace with your real WhatsApp business number
-     Format: country code + number, no + or spaces
-     Example: 60123456789 (Malaysia)
+     SITE SETTINGS — populated from Supabase site_settings
+     on page init (loadSiteSettings). Hardcoded values below
+     are FALLBACKS used only if the DB fetch fails.
   ─────────────────────────────────────────────── */
-  const WA_NUMBER  = '60183977367'
-  const WA_MESSAGE = 'Assalamualaikum & Hi! I found you on KADH Collective and would like to ask about your abayas.'
 
-  /* ─────────────────────────────────────────────
-     CURRENCY SYSTEM
-  ─────────────────────────────────────────────── */
-  const CURRENCIES = {
+  // WhatsApp (fallback values)
+  let WA_NUMBER  = '60183977367'
+  let WA_MESSAGE = 'Assalamualaikum & Hi! I found you on KADH Collective and would like to ask about your abayas.'
+
+  // Currency rate table (fallback values, MYR base)
+  // Symbols don't change; rates get refreshed from settings.
+  const CURRENCY_SYMBOLS = {
+    MYR: 'RM ', USD: 'USD ', AED: 'AED ', GBP: '£',
+    EUR: '€',   SGD: 'SGD ', AUD: 'AUD ', SAR: 'SAR ',
+  }
+
+  let CURRENCIES = {
     MYR: { sym: 'RM ',   rate: 1      },
     USD: { sym: 'USD ',  rate: 0.22   },
     AED: { sym: 'AED ',  rate: 0.81   },
@@ -1586,15 +1591,23 @@
     SAR: { sym: 'SAR ',  rate: 0.83   },
   }
 
+  // Geo→currency defaults (fallback)
+  let CURRENCY_GEO_DEFAULTS = {
+    MY: 'MYR', SG: 'SGD', ID: 'MYR', AE: 'AED', SA: 'SAR',
+    GB: 'GBP', US: 'USD', AU: 'AUD', default: 'USD',
+  }
+
   let activeCurrency = 'MYR'
+  const MANUAL_CURRENCY_KEY = 'kadh_currency'
 
   function fmt(rmAmount) {
-    const c = CURRENCIES[activeCurrency]
+    const c = CURRENCIES[activeCurrency] || CURRENCIES.MYR
     return c.sym + (rmAmount * c.rate).toFixed(2)
   }
 
   function setCurrency(cur) {
     activeCurrency = cur
+    try { localStorage.setItem(MANUAL_CURRENCY_KEY, cur) } catch (_) {}
     document.querySelectorAll('.currency-sel').forEach(s => s.value = cur)
     renderProducts(cachedProducts)
     renderCart()
@@ -1606,10 +1619,46 @@
     }
   }
 
+  /* ── Geo-detect visitor country (Phase 4b) ──
+     Returns ISO-2 country code based on browser timezone, falling
+     back to language tag, then 'default'. Used to auto-pick the
+     currency on first visit so SG buyers see SGD without clicking. */
+  function detectVisitorCountry() {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+      if (tz === 'Asia/Singapore')     return 'SG'
+      if (tz === 'Asia/Kuala_Lumpur')  return 'MY'
+      if (tz === 'Asia/Jakarta')       return 'ID'
+      if (tz === 'Asia/Dubai')         return 'AE'
+      if (tz === 'Asia/Riyadh')        return 'SA'
+      if (tz === 'Europe/London')      return 'GB'
+      if (tz.startsWith('America/'))   return 'US'
+      if (tz.startsWith('Australia/')) return 'AU'
+      if (tz.startsWith('Europe/'))    return 'DE'  // any Europe → EUR via geo defaults
+    } catch (_) {}
+    const m = (navigator.language || '').match(/-([A-Z]{2})$/i)
+    if (m) return m[1].toUpperCase()
+    return 'default'
+  }
+
+  function applyInitialCurrency() {
+    // Honour user's manual choice (saved by setCurrency) over geo-detect
+    let chosen
+    try { chosen = localStorage.getItem(MANUAL_CURRENCY_KEY) } catch (_) {}
+    if (!chosen || !CURRENCIES[chosen]) {
+      const country = detectVisitorCountry()
+      chosen = CURRENCY_GEO_DEFAULTS[country] || CURRENCY_GEO_DEFAULTS.default || 'MYR'
+    }
+    if (CURRENCIES[chosen]) {
+      activeCurrency = chosen
+      document.querySelectorAll('.currency-sel').forEach(s => s.value = chosen)
+    }
+  }
+
   /* ─────────────────────────────────────────────
-     SHIPPING ZONES
+     SHIPPING ZONES (fallback — refreshed from site_settings)
   ─────────────────────────────────────────────── */
-  const SHIPPING_ZONES = {
+  let SHIPPING_ZONES = {
     MY:    [{ name: 'Standard (Pos Laju)',         days: '2–4 business days',   price: 0  },
             { name: 'Express (Next Day)',           days: 'Next business day',   price: 15 }],
     SG:    [{ name: 'Standard (DHL / FedEx)',       days: '3–5 business days',   price: 25 },
@@ -2554,12 +2603,49 @@
     }
   }
 
+  /* ── Load site settings from Supabase (Phase 4a) ──
+     Reads operational config (WA #, shipping zones, FX rates, etc.)
+     and overrides the fallback constants above. Failures log a
+     warning to console and we keep using fallbacks — never blocks. */
+  async function loadSiteSettings() {
+    try {
+      const { data, error } = await db.from('site_settings').select('key, value')
+      if (error) throw error
+      const map = Object.fromEntries((data || []).map(r => [r.key, r.value]))
+
+      if (map.whatsapp_number) WA_NUMBER  = String(map.whatsapp_number)
+      if (map.wa_message)      WA_MESSAGE = String(map.wa_message)
+      if (map.shipping_zones && typeof map.shipping_zones === 'object') {
+        SHIPPING_ZONES = map.shipping_zones
+      }
+      if (map.currency_geo_defaults && typeof map.currency_geo_defaults === 'object') {
+        CURRENCY_GEO_DEFAULTS = map.currency_geo_defaults
+      }
+      if (map.currency_rates && typeof map.currency_rates === 'object') {
+        const updated = {}
+        for (const [code, rate] of Object.entries(map.currency_rates)) {
+          updated[code] = {
+            sym:  CURRENCY_SYMBOLS[code] || (code + ' '),
+            rate: Number(rate) || 1,
+          }
+        }
+        CURRENCIES = updated
+      }
+    } catch (err) {
+      console.warn('[settings] Could not load site_settings, using fallbacks:', err.message)
+    }
+  }
+
   /* ─────────────────────────────────────────────
      INITIALISE
   ─────────────────────────────────────────────── */
-  loadProducts()
-  updateShipping()
-  handleStripeReturn()
+  ;(async () => {
+    await loadSiteSettings()       // pull WA #, shipping zones, FX rates
+    applyInitialCurrency()         // auto-pick currency from geo or saved choice
+    await loadProducts()           // products render with correct currency
+    updateShipping()
+    handleStripeReturn()
+  })()
 
 
   /* ══════════════════════════════════════════════════════
