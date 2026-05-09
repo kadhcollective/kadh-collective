@@ -719,6 +719,84 @@
     </div>
   </div>
 
+  <!-- WhatsApp Contact -->
+  <div class="settings-section">
+    <div class="settings-section-title">WhatsApp Contact</div>
+    <div class="card">
+      <div class="settings-grid">
+        <div class="field-group">
+          <label class="field-label">WhatsApp Number</label>
+          <input class="field-input" id="whatsapp-number" placeholder="60183977367 — country code + digits, no + or spaces">
+        </div>
+        <div class="field-group settings-full">
+          <label class="field-label">Customer Float-Button Message</label>
+          <textarea class="field-input" id="wa-message" rows="3" style="resize:vertical;" placeholder="Pre-filled message shown when a customer taps the WhatsApp float button on the storefront"></textarea>
+        </div>
+        <div class="settings-full">
+          <button class="btn btn-primary btn-sm" onclick="saveWAContact()">Save WhatsApp Contact</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shipping Zones -->
+  <div class="settings-section">
+    <div class="settings-section-title">Shipping Zones &amp; Prices</div>
+    <div class="card">
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:1rem;line-height:1.7;">
+        Shipping options grouped by region. Prices in <strong>MYR</strong>. Each zone can have multiple options. Edit the JSON below — keep the structure intact.
+      </p>
+      <div class="field-group">
+        <label class="field-label">Shipping Zones (JSON)</label>
+        <textarea class="field-input" id="shipping-zones" rows="20" style="resize:vertical;font-family:monospace;font-size:.78rem;"></textarea>
+        <p style="font-size:.7rem;color:var(--muted);margin-top:.4rem;">
+          Tip: just change the price numbers. If you mess up the JSON, hit "Reset to Saved" before saving.
+        </p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveShippingZones()">Save Shipping Zones</button>
+      <button class="btn btn-outline btn-sm" onclick="loadShippingZones()" style="margin-left:.5rem;">Reset to Saved</button>
+      <span id="shipping-zones-status" style="font-size:.75rem;margin-left:.75rem;"></span>
+    </div>
+  </div>
+
+  <!-- Currency / FX Rates -->
+  <div class="settings-section">
+    <div class="settings-section-title">Currency Exchange Rates</div>
+    <div class="card">
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:1rem;line-height:1.7;">
+        Rates are MYR-based and auto-refreshed daily by a cron job. You can also refresh manually below.
+      </p>
+      <div class="field-group" style="margin-bottom:1rem;">
+        <label class="field-label">Last Refreshed</label>
+        <div id="fx-last-updated" style="font-size:.85rem;color:var(--dark);padding:.5rem 0;">—</div>
+      </div>
+      <div class="field-group" style="margin-bottom:1rem;">
+        <label class="field-label">Current Rates (1 MYR = ...)</label>
+        <pre id="fx-rates-display" style="background:var(--bg);padding:.75rem 1rem;border-radius:6px;font-size:.78rem;overflow-x:auto;margin:0;">—</pre>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="refreshFXNow()">Refresh Rates Now</button>
+      <span id="fx-refresh-status" style="font-size:.75rem;margin-left:.75rem;"></span>
+    </div>
+  </div>
+
+  <!-- Storefront Features -->
+  <div class="settings-section">
+    <div class="settings-section-title">Storefront Features</div>
+    <div class="card">
+      <div class="settings-grid">
+        <div class="settings-full">
+          <div class="toggle-wrap" style="margin-bottom:1.25rem;">
+            <label class="toggle">
+              <input type="checkbox" id="bnpl-toggle" onchange="saveBnplToggle()">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Buy-Now-Pay-Later <span style="font-size:.7rem;color:var(--muted);">(Atome / Grab PayLater — leave off until Phase 7)</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 <!-- END PANELS -->
 
@@ -983,8 +1061,18 @@ async function loadSettings() {
   setVal('shop-url',            _settings.shop_url || '')
   setVal('wa-confirm-template', _settings.wa_confirm_template || '')
   setVal('wa-shipped-template', _settings.wa_shipped_template || '')
+  setVal('whatsapp-number',     _settings.whatsapp_number || _settings.wa_number || '')
+  setVal('wa-message',          _settings.wa_message || '')
+
   const epToggle = document.getElementById('ep-toggle')
   if (epToggle) epToggle.checked = (_settings.ep_integration === 'on')
+
+  const bnplToggle = document.getElementById('bnpl-toggle')
+  if (bnplToggle) bnplToggle.checked = (_settings.bnpl_enabled === true)
+
+  // Phase 4d additions
+  loadShippingZones()
+  loadFXDisplay()
 }
 
 function setVal(id, val) { const el = document.getElementById(id); if (el) el.value = val }
@@ -1024,6 +1112,87 @@ async function saveWATemplates() {
   await upsertSetting('wa_confirm_template', getVal('wa-confirm-template'))
   await upsertSetting('wa_shipped_template', getVal('wa-shipped-template'))
   toast('WhatsApp templates saved')
+}
+
+// ── Phase 4d: WhatsApp Contact ─────────────────────────────────
+async function saveWAContact() {
+  await upsertSetting('whatsapp_number', getVal('whatsapp-number'))
+  await upsertSetting('wa_message',      getVal('wa-message'))
+  toast('WhatsApp contact saved')
+}
+
+// ── Phase 4d: Shipping Zones ───────────────────────────────────
+function loadShippingZones() {
+  const v = _settings.shipping_zones
+  const json = v ? JSON.stringify(v, null, 2) : ''
+  setVal('shipping-zones', json)
+  const status = document.getElementById('shipping-zones-status')
+  if (status) { status.textContent = ''; status.style.color = '' }
+}
+
+async function saveShippingZones() {
+  const status = document.getElementById('shipping-zones-status')
+  if (status) status.textContent = ''
+  let parsed
+  try {
+    parsed = JSON.parse(getVal('shipping-zones'))
+  } catch (e) {
+    if (status) { status.textContent = '✗ Invalid JSON: ' + e.message; status.style.color = 'var(--danger,#c00)' }
+    return
+  }
+  await upsertSetting('shipping_zones', parsed)
+  if (status) { status.textContent = '✓ Saved'; status.style.color = 'var(--success,#080)' }
+  toast('Shipping zones saved')
+}
+
+// ── Phase 4d: FX Rates display + manual refresh ────────────────
+function loadFXDisplay() {
+  const rates = _settings.currency_rates
+  const tsRaw = _settings.currency_rates_updated_at
+  const tsEl  = document.getElementById('fx-last-updated')
+  const ratesEl = document.getElementById('fx-rates-display')
+  if (tsEl) {
+    if (tsRaw) {
+      const d = new Date(tsRaw)
+      tsEl.textContent = isNaN(d.getTime())
+        ? String(tsRaw)
+        : d.toLocaleString('en-MY', { dateStyle:'medium', timeStyle:'short' })
+    } else {
+      tsEl.textContent = 'Never refreshed (using seed values)'
+    }
+  }
+  if (ratesEl) ratesEl.textContent = rates ? JSON.stringify(rates, null, 2) : '—'
+}
+
+async function refreshFXNow() {
+  const status = document.getElementById('fx-refresh-status')
+  if (status) { status.textContent = 'Refreshing…'; status.style.color = 'var(--muted)' }
+  try {
+    const res = await fetch(`${SUPA_URL}/functions/v1/refresh-fx-rates`, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${SUPA_KEY}`,
+        'apikey':         SUPA_KEY,
+      },
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(body.error || res.statusText)
+    _settings.currency_rates              = body.rates
+    _settings.currency_rates_updated_at   = body.fetched_at
+    loadFXDisplay()
+    if (status) { status.textContent = '✓ Updated'; status.style.color = 'var(--success,#080)' }
+    toast('FX rates refreshed')
+  } catch (e) {
+    if (status) { status.textContent = '✗ ' + e.message; status.style.color = 'var(--danger,#c00)' }
+  }
+}
+
+// ── Phase 4d: Storefront Toggles ───────────────────────────────
+async function saveBnplToggle() {
+  const on = document.getElementById('bnpl-toggle').checked
+  await upsertSetting('bnpl_enabled', on)
+  toast('BNPL ' + (on ? 'enabled' : 'disabled'))
 }
 
 async function testEpConnection() {

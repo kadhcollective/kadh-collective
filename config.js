@@ -1,23 +1,37 @@
 // ============================================================
 //  KADH Collective — Static Brand Configuration
+//  config.js
+//
 //  Edit this file to update brand copy, social links, and
 //  other rarely-changing values. Push to GitHub to deploy.
 //
-//  Operational values (shipping, WhatsApp #, FX, API keys)
-//  live in the Supabase site_settings table — edit those
-//  in the admin panel, not here.
+//  ─── WHAT GOES HERE ────────────────────────────────────────
+//  Things that almost never change without a brand refresh:
+//    - Hero / About / Community page copy
+//    - Brand colors and typography tokens
+//    - Social media URLs
+//    - Courier tracking URL templates
+//
+//  ─── WHAT GOES IN site_settings INSTEAD ───────────────────
+//  Things that change without a brand refresh — edit these
+//  in the Admin panel, not here:
+//    - Shipping zones and prices
+//    - WhatsApp number and message templates
+//    - Currency exchange rates (auto-refreshed)
+//    - API keys (Resend, EasyParcel, Stripe pub key)
+//    - BNPL on/off toggle
 // ============================================================
 
 window.KADH_CONFIG = {
 
-  // ─── Brand identity
+  // ─── Brand identity ────────────────────────────────────────
   brand: {
     name:        'KADH Collective',
     tagline:     'Modest abayas, crafted in quiet elegance.',
     established: '2024, Kuala Lumpur',
   },
 
-  // ─── Hero section (landing page)
+  // ─── Hero section (landing page) ──────────────────────────
   hero: {
     eyebrow:    'New Collection — Raya 2025',
     titleLine1: 'Dressed in',
@@ -28,7 +42,7 @@ window.KADH_CONFIG = {
     secondaryCta: { label: 'Our Story',       href: '/about' },
   },
 
-  // ─── Footer
+  // ─── Footer ───────────────────────────────────────────────
   footer: {
     tagline:       'Modest fashion, thoughtfully made.',
     address:       'Kuala Lumpur, Malaysia',
@@ -36,7 +50,7 @@ window.KADH_CONFIG = {
     copyrightYear: 2024,
   },
 
-  // ─── Social links — leave '' to hide
+  // ─── Social links ─ leave empty string '' to hide ─────────
   social: {
     instagram: 'https://instagram.com/kadhcollective',
     tiktok:    '',
@@ -44,7 +58,7 @@ window.KADH_CONFIG = {
     facebook:  '',
   },
 
-  // ─── Brand color tokens
+  // ─── Brand color tokens (matches existing CSS variables) ──
   colors: {
     maroon: '#6B0E0E',
     cream:  '#F2F0ED',
@@ -54,13 +68,14 @@ window.KADH_CONFIG = {
     muted:  '#999999',
   },
 
-  // ─── Typography
+  // ─── Typography ───────────────────────────────────────────
   fonts: {
     display: "'Forum', Georgia, serif",
     body:    "'Tenor Sans', Georgia, serif",
   },
 
-  // ─── Courier tracking URLs (replace {{tracking}})
+  // ─── Courier tracking URL templates ───────────────────────
+  // Replace {{tracking}} with the AWB / tracking number.
   courierTrackingUrls: {
     'pos-laju': 'https://www.pos.com.my/tracking?id={{tracking}}',
     'jnt':      'https://www.jtexpress.my/tracking?awb={{tracking}}',
@@ -70,10 +85,14 @@ window.KADH_CONFIG = {
     'aramex':   'https://www.aramex.com/track/results?ShipmentNumber={{tracking}}',
   },
 
-  // ─── About Us page copy (filled in Phase 5)
-  about: {},
+  // ─── About Us page (filled in Phase 5) ────────────────────
+  about: {
+    // Drafted in Phase 5: Story, Values, Behind The Process, All Girls Community
+  },
 
-  // ─── Community page copy (filled in Phase 5)
-  community: {},
+  // ─── Community page (filled in Phase 5) ───────────────────
+  community: {
+    // Drafted in Phase 5: IG embed, Journal, Events, Newsletter signup
+  },
 
 }
