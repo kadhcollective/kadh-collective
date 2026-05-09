@@ -122,7 +122,46 @@ window.KADH_CONFIG = {
     },
   },
 
-  // ─── Community page copy (filled in 5c)
-  community: {},
+  // ─── Community page copy (Phase 5c)
+  community: {
+    eyebrow:  'Community',
+    title:    'A sisterhood, gathered.',
+    subtitle: 'Stories, gatherings, and the women behind KADH. This is the heart of what we do.',
+
+    // ─── Instagram strip — manually-curated tiles ─────────────
+    // Edit these to feature your favourite IG posts. Each tile
+    // links to the post; image is the post's cover. Aim for 6.
+    // (Live IG API integration deferred — too much friction for V1.)
+    instagram: {
+      handle: '@kadhcollective',
+      tiles: [
+        // { image: 'https://...jpg', url: 'https://instagram.com/p/XXX' },
+      ],
+    },
+
+    journal: {
+      eyebrow: 'Journal',
+      title:   'Field notes.',
+      empty:   'New entries are on the way. Check back soon.',
+    },
+
+    events: {
+      eyebrow:        'Events',
+      title:          'Where we gather.',
+      upcomingHeader: 'Upcoming',
+      pastHeader:     'Past gatherings',
+      empty:          'No events scheduled right now. Watch this space.',
+    },
+
+    newsletter: {
+      eyebrow:    'Stay close',
+      title:      'Letters from KADH.',
+      subtitle:   'Collection drops, restocks, and small notes from our atelier. No spam — promise.',
+      ctaLabel:   'Subscribe',
+      successMsg: "Thank you. We'll be in touch soon.",
+      errorMsg:   "Something went wrong. Please try again.",
+      dupeMsg:    "You're already on the list — thank you.",
+    },
+  },
 
 }

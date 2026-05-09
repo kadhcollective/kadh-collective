@@ -1016,6 +1016,90 @@
       .about-cta           { padding: 3rem 1rem; }
       .about-cta h2        { font-size: 1.6rem; }
     }
+
+    /* ─── COMMUNITY PAGE (Phase 5c) ─── */
+    .community-wrap          { max-width: 1100px; margin: 0 auto; padding: 4rem 1.5rem 6rem; }
+    .community-hero          { text-align: center; padding: 2rem 0 4rem; }
+    .community-hero-eyebrow  { font-size: .7rem; letter-spacing: .25em; text-transform: uppercase; color: var(--gold); margin-bottom: 1rem; }
+    .community-hero-title    { font-family: var(--font-display); font-size: 3rem; font-weight: 300; line-height: 1.15; margin-bottom: 1.25rem; color: var(--dark); }
+    .community-hero-subtitle { font-size: 1rem; color: var(--mid); max-width: 580px; margin: 0 auto; line-height: 1.75; }
+
+    .community-section       { margin: 4rem 0 5rem; }
+    .community-section-head  { text-align: center; margin-bottom: 2rem; }
+    .community-section-eyebrow { font-size: .68rem; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); margin-bottom: .6rem; }
+    .community-section-title { font-family: var(--font-display); font-size: 1.85rem; font-weight: 300; color: var(--dark); }
+
+    .ig-strip                { display: grid; grid-template-columns: repeat(6, 1fr); gap: .65rem; }
+    .ig-tile                 { aspect-ratio: 1/1; overflow: hidden; border-radius: 4px; background: var(--soft); display: block; position: relative; }
+    .ig-tile img             { width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
+    .ig-tile:hover img       { transform: scale(1.05); }
+    .ig-handle               { text-align: center; margin-top: 1rem; font-size: .82rem; color: var(--mid); }
+    .ig-handle a             { color: var(--maroon, #6B0E0E); text-decoration: none; letter-spacing: .04em; }
+
+    .journal-grid            { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    .journal-card            { background: #fff; border: 1px solid var(--sand); border-radius: var(--radius-md); overflow: hidden; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; display: flex; flex-direction: column; }
+    .journal-card:hover      { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,.06); }
+    .journal-card-img        { aspect-ratio: 16/10; background: var(--soft); overflow: hidden; }
+    .journal-card-img img    { width: 100%; height: 100%; object-fit: cover; }
+    .journal-card-body       { padding: 1.25rem 1.4rem 1.5rem; flex: 1; display: flex; flex-direction: column; }
+    .journal-card-title      { font-family: var(--font-display); font-size: 1.15rem; line-height: 1.3; margin-bottom: .5rem; color: var(--dark); }
+    .journal-card-excerpt    { font-size: .82rem; color: var(--mid); line-height: 1.7; flex: 1; margin-bottom: 1rem; }
+    .journal-card-link       { font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); }
+
+    .events-list             { display: flex; flex-direction: column; gap: 1.25rem; }
+    .event-row               { display: grid; grid-template-columns: 110px 1fr auto; gap: 1.5rem; padding: 1.4rem 1.6rem; background: #fff; border: 1px solid var(--sand); border-radius: var(--radius-md); align-items: center; }
+    .event-date              { text-align: center; font-family: var(--font-display); }
+    .event-date .day         { font-size: 2rem; line-height: 1; color: var(--dark); }
+    .event-date .month       { font-size: .7rem; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); margin-top: .35rem; }
+    .event-date .year        { font-size: .72rem; color: var(--mid); margin-top: .25rem; }
+    .event-info-title        { font-family: var(--font-display); font-size: 1.1rem; color: var(--dark); margin-bottom: .35rem; }
+    .event-info-meta         { font-size: .78rem; color: var(--mid); margin-bottom: .35rem; }
+    .event-info-desc         { font-size: .82rem; color: var(--mid); line-height: 1.65; }
+    .event-cta               { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; padding: 9px 18px; background: var(--dark); color: #fff; border-radius: 4px; text-decoration: none; }
+    .event-status-tag        { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .65rem; letter-spacing: .15em; text-transform: uppercase; background: var(--soft); color: var(--mid); margin-left: .5rem; vertical-align: middle; }
+
+    .newsletter-card         { background: var(--soft); border: 1px solid var(--sand); border-radius: var(--radius-md); padding: 3rem 2rem; text-align: center; max-width: 540px; margin: 0 auto; }
+    .newsletter-card h3      { font-family: var(--font-display); font-size: 1.65rem; font-weight: 300; margin-bottom: .5rem; color: var(--dark); }
+    .newsletter-card p       { color: var(--mid); margin-bottom: 1.5rem; font-size: .88rem; line-height: 1.7; }
+    .newsletter-form         { display: flex; gap: .5rem; max-width: 380px; margin: 0 auto; }
+    .newsletter-form input   { flex: 1; padding: 12px 14px; border: 1px solid var(--sand); border-radius: 4px; font-family: inherit; font-size: .85rem; background: #fff; color: var(--dark); }
+    .newsletter-form input:focus { outline: none; border-color: var(--gold); }
+    .newsletter-form button  { padding: 12px 20px; background: var(--dark); color: #fff; border: none; border-radius: 4px; font-size: .75rem; letter-spacing: .15em; text-transform: uppercase; cursor: pointer; }
+    .newsletter-status       { margin-top: 1rem; font-size: .78rem; min-height: 1.2em; }
+    .newsletter-status.ok    { color: #2c5e2c; }
+    .newsletter-status.err   { color: #8b3030; }
+
+    .empty-state             { text-align: center; padding: 3rem 1rem; color: var(--mid); font-size: .88rem; font-style: italic; }
+
+    /* Journal-post modal */
+    .journal-modal           { position: fixed; inset: 0; background: rgba(44,36,24,.75); z-index: 9998; display: none; align-items: flex-start; justify-content: center; padding: 4rem 1.5rem; overflow-y: auto; backdrop-filter: blur(3px); }
+    .journal-modal.open      { display: flex; }
+    .journal-modal-card      { background: #fff; border-radius: var(--radius-md); max-width: 720px; width: 100%; padding: 2.5rem 2.5rem 3rem; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+    .journal-modal-close     { position: absolute; top: 1rem; right: 1.25rem; background: none; border: none; font-size: 1.6rem; color: var(--mid); cursor: pointer; line-height: 1; }
+    .journal-modal-eyebrow   { font-size: .68rem; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); margin-bottom: .65rem; }
+    .journal-modal-title     { font-family: var(--font-display); font-size: 1.9rem; font-weight: 300; line-height: 1.25; color: var(--dark); margin-bottom: 1.25rem; }
+    .journal-modal-meta      { font-size: .75rem; color: var(--mid); margin-bottom: 1.5rem; }
+    .journal-modal-body      { font-size: .95rem; color: var(--dark); line-height: 1.85; white-space: pre-wrap; }
+    .journal-modal-img       { width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px; margin-bottom: 1.5rem; }
+
+    @media (max-width: 720px) {
+      .community-wrap          { padding: 2rem 1rem 4rem; }
+      .community-hero          { padding: 1rem 0 2.5rem; }
+      .community-hero-title    { font-size: 2.1rem; }
+      .community-hero-subtitle { font-size: .9rem; }
+      .community-section       { margin: 3rem 0 4rem; }
+      .ig-strip                { grid-template-columns: repeat(3, 1fr); }
+      .journal-grid            { grid-template-columns: 1fr; }
+      .event-row               { grid-template-columns: 80px 1fr; row-gap: 1rem; padding: 1.25rem 1.25rem; }
+      .event-cta               { grid-column: 1 / -1; text-align: center; }
+      .event-date .day         { font-size: 1.6rem; }
+      .newsletter-card         { padding: 2.25rem 1.25rem; }
+      .newsletter-form         { flex-direction: column; }
+      .newsletter-form button  { padding: 14px 20px; }
+      .journal-modal           { padding: 2rem 1rem; }
+      .journal-modal-card      { padding: 2rem 1.5rem 2.5rem; }
+      .journal-modal-title     { font-size: 1.5rem; }
+    }
   </style>
 </head>
 <body>
@@ -1552,6 +1636,95 @@
   </div>
 
   <div class="mini-footer">© 2025 KADH Collective</div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     COMMUNITY PAGE (Phase 5c)
+════════════════════════════════════════════ -->
+<div id="page-community" class="page">
+  <nav>
+    <div class="nav-logo" onclick="showPage('landing')">KADH <span>COLLECTIVE</span></div>
+    <div class="nav-links">
+      <a onclick="showPage('landing')" style="cursor:pointer">Collection</a>
+      <a onclick="showPage('about')"   style="cursor:pointer">Our Story</a>
+      <a onclick="showPage('community')" style="cursor:pointer" class="active">Community</a>
+    </div>
+    <div class="nav-right">
+      <select class="currency-sel" onchange="setCurrency(this.value)" id="currency-community">
+        <option value="MYR">MYR</option><option value="USD">USD</option><option value="AED">AED</option>
+        <option value="GBP">GBP</option><option value="EUR">EUR</option><option value="SGD">SGD</option>
+        <option value="AUD">AUD</option><option value="SAR">SAR</option>
+      </select>
+      <button class="cart-btn" onclick="showPage('cart')">Bag <span class="cart-count" id="cart-count-community">0</span></button>
+    </div>
+  </nav>
+
+  <div class="community-wrap">
+
+    <!-- Hero -->
+    <section class="community-hero">
+      <div class="community-hero-eyebrow"  id="community-hero-eyebrow"></div>
+      <h1  class="community-hero-title"    id="community-hero-title"></h1>
+      <p   class="community-hero-subtitle" id="community-hero-subtitle"></p>
+    </section>
+
+    <!-- Instagram Strip -->
+    <section class="community-section" id="community-instagram-section">
+      <div class="community-section-head">
+        <div class="community-section-eyebrow">Instagram</div>
+        <h2 class="community-section-title">Follow the journey</h2>
+      </div>
+      <div class="ig-strip" id="ig-strip"></div>
+      <div class="ig-handle" id="ig-handle"></div>
+    </section>
+
+    <!-- Journal -->
+    <section class="community-section">
+      <div class="community-section-head">
+        <div class="community-section-eyebrow" id="journal-eyebrow"></div>
+        <h2 class="community-section-title" id="journal-title"></h2>
+      </div>
+      <div id="journal-grid"></div>
+    </section>
+
+    <!-- Events -->
+    <section class="community-section">
+      <div class="community-section-head">
+        <div class="community-section-eyebrow" id="events-eyebrow"></div>
+        <h2 class="community-section-title" id="events-title"></h2>
+      </div>
+      <div id="events-content"></div>
+    </section>
+
+    <!-- Newsletter -->
+    <section class="community-section">
+      <div class="newsletter-card">
+        <div class="community-section-eyebrow" id="newsletter-eyebrow" style="text-align:center;"></div>
+        <h3 id="newsletter-title"></h3>
+        <p  id="newsletter-subtitle"></p>
+        <form class="newsletter-form" onsubmit="return subscribeNewsletter(event)">
+          <input type="email" id="newsletter-email" placeholder="your@email.com" required autocomplete="email">
+          <button type="submit" id="newsletter-btn"></button>
+        </form>
+        <div class="newsletter-status" id="newsletter-status"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="mini-footer">© 2025 KADH Collective</div>
+</div>
+
+<!-- Journal post modal -->
+<div class="journal-modal" id="journal-modal" onclick="closeJournal(event)">
+  <div class="journal-modal-card" onclick="event.stopPropagation()">
+    <button class="journal-modal-close" onclick="closeJournal()">×</button>
+    <img class="journal-modal-img" id="journal-modal-img" style="display:none">
+    <div class="journal-modal-eyebrow" id="journal-modal-eyebrow">Journal</div>
+    <h2  class="journal-modal-title"   id="journal-modal-title"></h2>
+    <div class="journal-modal-meta"    id="journal-modal-meta"></div>
+    <div class="journal-modal-body"    id="journal-modal-body"></div>
+  </div>
 </div>
 
 <!-- ════════════════════════════════════════════
@@ -2346,6 +2519,7 @@
     if (page === 'checkout')  { renderOrderSummary(); updateShipping(); }
     if (page === 'track')     initTrackPage()
     if (page === 'about')     renderAbout()
+    if (page === 'community') renderCommunity()
   }
 
   /* ── Render About Us page from KADH_CONFIG (Phase 5a) ── */
@@ -2399,6 +2573,219 @@
     } else {
       window.location.href = href
     }
+  }
+
+  /* ── Render Community page (Phase 5c) ── */
+  let _journalCache = []
+
+  async function renderCommunity() {
+    const cfg = (window.KADH_CONFIG && window.KADH_CONFIG.community) || {}
+    const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt || '' }
+
+    // Hero
+    setText('community-hero-eyebrow',  cfg.eyebrow  || 'Community')
+    setText('community-hero-title',    cfg.title    || 'Community')
+    setText('community-hero-subtitle', cfg.subtitle || '')
+
+    // Section headers
+    setText('journal-eyebrow',     cfg.journal?.eyebrow    || 'Journal')
+    setText('journal-title',       cfg.journal?.title      || 'Field notes')
+    setText('events-eyebrow',      cfg.events?.eyebrow     || 'Events')
+    setText('events-title',        cfg.events?.title       || 'Where we gather')
+    setText('newsletter-eyebrow',  cfg.newsletter?.eyebrow || 'Stay close')
+    setText('newsletter-title',    cfg.newsletter?.title   || 'Letters from KADH')
+    setText('newsletter-subtitle', cfg.newsletter?.subtitle|| '')
+    const nbtn = document.getElementById('newsletter-btn')
+    if (nbtn) nbtn.textContent = cfg.newsletter?.ctaLabel || 'Subscribe'
+
+    // Instagram tiles
+    renderInstagramStrip(cfg.instagram || {})
+
+    // Journal posts
+    const journal = await fetchJournalPosts()
+    _journalCache = journal
+    renderJournalGrid(journal, cfg.journal?.empty)
+
+    // Events
+    const events = await fetchEvents()
+    renderEvents(events, cfg.events)
+  }
+
+  function renderInstagramStrip(ig) {
+    const strip   = document.getElementById('ig-strip')
+    const handle  = document.getElementById('ig-handle')
+    const section = document.getElementById('community-instagram-section')
+    const tiles   = Array.isArray(ig.tiles) ? ig.tiles : []
+
+    if (!tiles.length) {
+      // Hide the strip but keep handle line
+      if (strip)   strip.innerHTML = ''
+      if (section) section.style.display = ig.handle ? '' : 'none'
+    } else {
+      strip.innerHTML = tiles.slice(0, 6).map(t => `
+        <a class="ig-tile" href="${t.url || '#'}" target="_blank" rel="noopener">
+          <img src="${t.image}" alt="" loading="lazy">
+        </a>`).join('')
+    }
+
+    if (handle && ig.handle) {
+      handle.innerHTML = `Follow <a href="https://instagram.com/${(ig.handle || '').replace(/^@/, '')}" target="_blank" rel="noopener">${ig.handle}</a>`
+    } else if (handle) {
+      handle.innerHTML = ''
+    }
+  }
+
+  async function fetchJournalPosts() {
+    try {
+      const { data, error } = await db.from('journal_posts')
+        .select('id, slug, title, excerpt, body, cover_image, author, published_at')
+        .eq('published', true)
+        .order('published_at', { ascending: false })
+      if (error) throw error
+      return data || []
+    } catch (err) {
+      console.warn('[community] journal load failed:', err.message)
+      return []
+    }
+  }
+
+  function renderJournalGrid(posts, emptyMsg) {
+    const grid = document.getElementById('journal-grid')
+    if (!grid) return
+    if (!posts.length) {
+      grid.innerHTML = `<div class="empty-state">${emptyMsg || 'New entries are on the way.'}</div>`
+      return
+    }
+    grid.className = 'journal-grid'
+    grid.innerHTML = posts.map((p, i) => `
+      <article class="journal-card" onclick="openJournal(${i})">
+        ${p.cover_image
+          ? `<div class="journal-card-img"><img src="${p.cover_image}" alt="${p.title}" loading="lazy"></div>`
+          : ''}
+        <div class="journal-card-body">
+          <h3 class="journal-card-title">${p.title}</h3>
+          <p class="journal-card-excerpt">${p.excerpt || ''}</p>
+          <span class="journal-card-link">Read More →</span>
+        </div>
+      </article>
+    `).join('')
+  }
+
+  function openJournal(i) {
+    const p = _journalCache[i]
+    if (!p) return
+    const modal  = document.getElementById('journal-modal')
+    const img    = document.getElementById('journal-modal-img')
+    if (p.cover_image) { img.src = p.cover_image; img.style.display = '' } else { img.style.display = 'none' }
+    document.getElementById('journal-modal-title').textContent = p.title
+    const meta = []
+    if (p.author)      meta.push(p.author)
+    if (p.published_at) {
+      const d = new Date(p.published_at)
+      if (!isNaN(d)) meta.push(d.toLocaleDateString('en-MY', { day:'numeric', month:'long', year:'numeric' }))
+    }
+    document.getElementById('journal-modal-meta').textContent = meta.join(' · ')
+    document.getElementById('journal-modal-body').textContent = p.body || ''
+    modal.classList.add('open')
+    document.body.style.overflow = 'hidden'
+  }
+
+  function closeJournal(e) {
+    if (e && e.target.id !== 'journal-modal' && e.type !== undefined) return
+    document.getElementById('journal-modal').classList.remove('open')
+    document.body.style.overflow = ''
+  }
+
+  async function fetchEvents() {
+    try {
+      const { data, error } = await db.from('events')
+        .select('id, title, description, event_date, location, cover_image, event_type, status, rsvp_url')
+        .eq('published', true)
+        .order('event_date', { ascending: false })
+      if (error) throw error
+      return data || []
+    } catch (err) {
+      console.warn('[community] events load failed:', err.message)
+      return []
+    }
+  }
+
+  function renderEvents(events, cfg) {
+    const wrap = document.getElementById('events-content')
+    if (!wrap) return
+    if (!events.length) {
+      wrap.innerHTML = `<div class="empty-state">${cfg?.empty || 'No events scheduled right now.'}</div>`
+      return
+    }
+    const upcoming = events.filter(e => e.status === 'upcoming')
+    const past     = events.filter(e => e.status !== 'upcoming')
+
+    let html = ''
+    if (upcoming.length) {
+      html += `<h3 style="font-family:var(--font-display);font-weight:300;font-size:1.05rem;color:var(--gold);margin:1.5rem 0 1rem;letter-spacing:.04em;">${cfg?.upcomingHeader || 'Upcoming'}</h3>`
+      html += `<div class="events-list">${upcoming.map(eventRowHTML).join('')}</div>`
+    }
+    if (past.length) {
+      html += `<h3 style="font-family:var(--font-display);font-weight:300;font-size:1.05rem;color:var(--mid);margin:2.5rem 0 1rem;letter-spacing:.04em;">${cfg?.pastHeader || 'Past gatherings'}</h3>`
+      html += `<div class="events-list">${past.map(eventRowHTML).join('')}</div>`
+    }
+    wrap.innerHTML = html
+  }
+
+  function eventRowHTML(ev) {
+    const d = new Date(ev.event_date)
+    const day   = isNaN(d) ? '—' : d.getDate()
+    const month = isNaN(d) ? ''  : d.toLocaleString('en-MY', { month:'short' })
+    const year  = isNaN(d) ? ''  : d.getFullYear()
+    const tag   = ev.status === 'upcoming' ? '' : `<span class="event-status-tag">Past</span>`
+    const cta   = (ev.status === 'upcoming' && ev.rsvp_url)
+      ? `<a class="event-cta" href="${ev.rsvp_url}" target="_blank" rel="noopener">RSVP</a>`
+      : ''
+    return `
+      <div class="event-row">
+        <div class="event-date">
+          <div class="day">${day}</div>
+          <div class="month">${month}</div>
+          <div class="year">${year}</div>
+        </div>
+        <div class="event-info">
+          <div class="event-info-title">${ev.title}${tag}</div>
+          <div class="event-info-meta">${[ev.location, ev.event_type].filter(Boolean).join(' · ')}</div>
+          <div class="event-info-desc">${ev.description || ''}</div>
+        </div>
+        ${cta}
+      </div>`
+  }
+
+  async function subscribeNewsletter(e) {
+    e.preventDefault()
+    const cfg    = (window.KADH_CONFIG && window.KADH_CONFIG.community && window.KADH_CONFIG.community.newsletter) || {}
+    const status = document.getElementById('newsletter-status')
+    const input  = document.getElementById('newsletter-email')
+    const email  = (input.value || '').trim().toLowerCase()
+    if (!email) return false
+    status.textContent = 'Sending…'; status.className = 'newsletter-status'
+
+    try {
+      const { error } = await db.from('newsletter_subscribers')
+        .insert({ email, source: 'community-page' })
+      if (error) {
+        if (error.code === '23505') {  // unique violation
+          status.textContent = cfg.dupeMsg || "You're already on the list."
+          status.className   = 'newsletter-status ok'
+          return false
+        }
+        throw error
+      }
+      status.textContent = cfg.successMsg || 'Thank you.'
+      status.className   = 'newsletter-status ok'
+      input.value = ''
+    } catch (err) {
+      console.warn('[newsletter] subscribe failed:', err.message)
+      status.textContent = cfg.errorMsg || 'Something went wrong.'
+      status.className   = 'newsletter-status err'
+    }
+    return false
   }
 
   function scrollToSection(id) {
