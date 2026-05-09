@@ -441,6 +441,11 @@
           <span class="nav-badge" id="nav-ing-badge" style="display:none">!</span>
         </div>
 
+        <div class="nav-section">Content</div>
+        <div class="nav-item" onclick="showPanel('content',this)">
+          <span class="nav-icon">✎</span> Journal &amp; Events
+        </div>
+
         <div class="nav-section">Site</div>
         <div class="nav-item" onclick="showPanel('settings',this)">
           <span class="nav-icon">◉</span> Settings
@@ -619,6 +624,168 @@
 <!-- ═══════════════════════════════════════════════════════ -->
 <!-- PANEL: SETTINGS                                         -->
 <!-- ═══════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PANEL: CONTENT (Journal + Events)                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-content">
+  <div class="toolbar" style="gap:.5rem;">
+    <button class="pay-tab content-tab active" data-tab="journal" onclick="switchContentTab('journal')" style="border:1px solid var(--sand);background:var(--bg);padding:8px 18px;border-radius:6px;cursor:pointer;font-size:.8rem;">Journal</button>
+    <button class="pay-tab content-tab" data-tab="events" onclick="switchContentTab('events')" style="border:1px solid var(--sand);background:transparent;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:.8rem;">Events</button>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary btn-sm" id="content-new-btn" onclick="openContentNew()">+ New</button>
+  </div>
+
+  <!-- Journal posts table -->
+  <div id="content-tab-journal" class="card" style="padding:0;overflow:hidden;">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Slug</th>
+          <th>Author</th>
+          <th>Published</th>
+          <th>Updated</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="journal-tbody">
+        <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted);"><div class="spinner"></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Events table -->
+  <div id="content-tab-events" class="card" style="padding:0;overflow:hidden;display:none;">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Date</th>
+          <th>Location</th>
+          <th>Status</th>
+          <th>Published</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="events-tbody">
+        <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted);"><div class="spinner"></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Journal post modal -->
+<div class="modal-overlay" id="post-modal">
+  <div class="modal-card" style="max-width:680px;">
+    <div class="modal-header">
+      <span class="modal-title" id="post-modal-title">New Journal Post</span>
+      <button class="modal-close" onclick="closeModal('post-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="settings-grid">
+        <div class="field-group settings-full">
+          <label class="field-label">Title</label>
+          <input class="field-input" id="post-title" oninput="autoSlug()">
+        </div>
+        <div class="field-group settings-full">
+          <label class="field-label">Slug <span style="color:var(--muted);font-weight:400;font-size:.7rem;">(URL-friendly, auto-filled)</span></label>
+          <input class="field-input" id="post-slug" placeholder="welcome-to-kadh">
+        </div>
+        <div class="field-group settings-full">
+          <label class="field-label">Excerpt <span style="color:var(--muted);font-weight:400;font-size:.7rem;">(1–2 sentences, shown on the card)</span></label>
+          <textarea class="field-input" id="post-excerpt" rows="2" style="resize:vertical;"></textarea>
+        </div>
+        <div class="field-group settings-full">
+          <label class="field-label">Body</label>
+          <textarea class="field-input" id="post-body" rows="12" style="resize:vertical;font-size:.85rem;line-height:1.7;"></textarea>
+        </div>
+        <div class="field-group settings-full">
+          <label class="field-label">Cover Image URL</label>
+          <input class="field-input" id="post-cover" placeholder="https://...">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Author</label>
+          <input class="field-input" id="post-author" placeholder="KADH Collective">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Status</label>
+          <select class="field-input filter-select" id="post-published" style="background:var(--bg);">
+            <option value="false">Draft</option>
+            <option value="true">Published</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" id="post-delete-btn" onclick="deletePost()" style="margin-right:auto;display:none;color:var(--danger,#a23030);">Delete</button>
+      <button class="btn btn-outline" onclick="closeModal('post-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePost()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Event modal -->
+<div class="modal-overlay" id="event-modal">
+  <div class="modal-card" style="max-width:600px;">
+    <div class="modal-header">
+      <span class="modal-title" id="event-modal-title">New Event</span>
+      <button class="modal-close" onclick="closeModal('event-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="settings-grid">
+        <div class="field-group settings-full">
+          <label class="field-label">Title</label>
+          <input class="field-input" id="ev-title">
+        </div>
+        <div class="field-group settings-full">
+          <label class="field-label">Description</label>
+          <textarea class="field-input" id="ev-description" rows="3" style="resize:vertical;"></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Date</label>
+          <input class="field-input" id="ev-date" type="date">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Type</label>
+          <input class="field-input" id="ev-type" placeholder="pop-up · gathering · workshop">
+        </div>
+        <div class="field-group settings-full">
+          <label class="field-label">Location</label>
+          <input class="field-input" id="ev-location" placeholder="Bangsar, Kuala Lumpur">
+        </div>
+        <div class="field-group settings-full">
+          <label class="field-label">Cover Image URL</label>
+          <input class="field-input" id="ev-cover" placeholder="https://...">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Status</label>
+          <select class="field-input filter-select" id="ev-status" style="background:var(--bg);">
+            <option value="upcoming">Upcoming</option>
+            <option value="past">Past</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Visibility</label>
+          <select class="field-input filter-select" id="ev-published" style="background:var(--bg);">
+            <option value="false">Hidden (Draft)</option>
+            <option value="true">Published</option>
+          </select>
+        </div>
+        <div class="field-group settings-full">
+          <label class="field-label">RSVP URL <span style="color:var(--muted);font-weight:400;font-size:.7rem;">(optional, only used for upcoming)</span></label>
+          <input class="field-input" id="ev-rsvp" placeholder="https://forms.gle/...">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" id="ev-delete-btn" onclick="deleteEvent()" style="margin-right:auto;display:none;color:var(--danger,#a23030);">Delete</button>
+      <button class="btn btn-outline" onclick="closeModal('event-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEvent()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="panel" id="panel-settings">
 
   <!-- Integrations -->
@@ -1012,6 +1179,7 @@ const panelTitles = {
   orders:     'Orders',
   customers:  'Customers',
   ingestion:  'Order Ingestion',
+  content:    'Journal & Events',
   settings:   'Settings',
 }
 
@@ -1023,6 +1191,9 @@ function showPanel(name, navEl) {
   if (navEl) navEl.classList.add('active')
   document.getElementById('topbar-title').textContent = panelTitles[name] || name
   closeSidebar()
+
+  // Lazy-load tab data
+  if (name === 'content') loadContent()
 }
 
 function openSidebar()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('active') }
@@ -1193,6 +1364,216 @@ async function saveBnplToggle() {
   const on = document.getElementById('bnpl-toggle').checked
   await upsertSetting('bnpl_enabled', on)
   toast('BNPL ' + (on ? 'enabled' : 'disabled'))
+}
+
+// ════════════════════════════════════════════════════════════
+//  CONTENT — Journal posts + Events (Phase 5d)
+// ════════════════════════════════════════════════════════════
+let _posts        = []
+let _events       = []
+let _currentTab   = 'journal'
+let _editingPost  = null
+let _editingEvent = null
+
+function switchContentTab(tab) {
+  _currentTab = tab
+  document.querySelectorAll('.content-tab').forEach(t => {
+    const on = t.dataset.tab === tab
+    t.classList.toggle('active', on)
+    t.style.background = on ? 'var(--bg)' : 'transparent'
+  })
+  document.getElementById('content-tab-journal').style.display = (tab === 'journal') ? '' : 'none'
+  document.getElementById('content-tab-events').style.display  = (tab === 'events')  ? '' : 'none'
+  document.getElementById('content-new-btn').textContent = tab === 'events' ? '+ New Event' : '+ New Post'
+}
+
+function openContentNew() {
+  if (_currentTab === 'events') openEventModal()
+  else                          openPostModal()
+}
+
+async function loadContent() {
+  // Load both lists
+  const [{ data: posts }, { data: events }] = await Promise.all([
+    sb.from('journal_posts').select('*').order('updated_at', { ascending: false }),
+    sb.from('events').select('*').order('event_date', { ascending: false }),
+  ])
+  _posts  = posts  || []
+  _events = events || []
+  renderPostsTable()
+  renderEventsTable()
+}
+
+// ── Journal posts ──────────────────────────────────────────
+function renderPostsTable() {
+  const tbody = document.getElementById('journal-tbody')
+  if (!tbody) return
+  if (!_posts.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted);">No posts yet. Click "+ New" to write one.</td></tr>`
+    return
+  }
+  tbody.innerHTML = _posts.map(p => `
+    <tr>
+      <td style="font-size:.88rem;">${p.title || '—'}</td>
+      <td style="font-size:.78rem;color:var(--muted);">${p.slug || '—'}</td>
+      <td style="font-size:.78rem;color:var(--muted);">${p.author || '—'}</td>
+      <td><span class="badge ${p.published ? 'badge-confirmed' : 'badge-pending'}">${p.published ? 'Published' : 'Draft'}</span></td>
+      <td style="font-size:.78rem;color:var(--muted);">${fmtDate(p.updated_at)}</td>
+      <td style="text-align:right;">
+        <button class="btn btn-outline btn-xs" onclick="openPostModal(${p.id})">Edit</button>
+      </td>
+    </tr>`).join('')
+}
+
+function openPostModal(id) {
+  _editingPost = id ? _posts.find(p => p.id === id) : null
+  document.getElementById('post-modal-title').textContent = _editingPost ? 'Edit Journal Post' : 'New Journal Post'
+  setVal('post-title',     _editingPost?.title       || '')
+  setVal('post-slug',      _editingPost?.slug        || '')
+  setVal('post-excerpt',   _editingPost?.excerpt     || '')
+  setVal('post-body',      _editingPost?.body        || '')
+  setVal('post-cover',     _editingPost?.cover_image || '')
+  setVal('post-author',    _editingPost?.author      || 'KADH Collective')
+  setVal('post-published', _editingPost ? String(!!_editingPost.published) : 'false')
+  document.getElementById('post-delete-btn').style.display = _editingPost ? '' : 'none'
+  openModal('post-modal')
+}
+
+function autoSlug() {
+  const title = getVal('post-title')
+  const slug  = getVal('post-slug')
+  // Only auto-fill if user hasn't typed a custom slug yet
+  if (!_editingPost && (!slug || slug === slugify(_lastTypedTitle || ''))) {
+    setVal('post-slug', slugify(title))
+  }
+  _lastTypedTitle = title
+}
+let _lastTypedTitle = ''
+
+function slugify(s) {
+  return (s || '').toString().toLowerCase()
+    .normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim().replace(/\s+/g, '-').replace(/-+/g, '-').slice(0, 80)
+}
+
+async function savePost() {
+  const title = getVal('post-title')
+  const slug  = getVal('post-slug') || slugify(title)
+  if (!title || !slug) { toast('Title and slug required'); return }
+
+  const published = getVal('post-published') === 'true'
+  const payload = {
+    title,
+    slug,
+    excerpt:     getVal('post-excerpt'),
+    body:        getVal('post-body'),
+    cover_image: getVal('post-cover') || null,
+    author:      getVal('post-author') || 'KADH Collective',
+    published,
+    published_at: published ? (_editingPost?.published_at || new Date().toISOString()) : null,
+  }
+
+  let res
+  if (_editingPost) {
+    res = await sb.from('journal_posts').update(payload).eq('id', _editingPost.id)
+  } else {
+    res = await sb.from('journal_posts').insert(payload)
+  }
+  if (res.error) { toast('Error: ' + res.error.message); return }
+  toast(_editingPost ? 'Post updated' : 'Post created')
+  closeModal('post-modal')
+  loadContent()
+}
+
+async function deletePost() {
+  if (!_editingPost) return
+  if (!confirm(`Delete "${_editingPost.title}"? This cannot be undone.`)) return
+  const { error } = await sb.from('journal_posts').delete().eq('id', _editingPost.id)
+  if (error) { toast('Delete failed: ' + error.message); return }
+  toast('Post deleted')
+  closeModal('post-modal')
+  loadContent()
+}
+
+// ── Events ──────────────────────────────────────────────────
+function renderEventsTable() {
+  const tbody = document.getElementById('events-tbody')
+  if (!tbody) return
+  if (!_events.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted);">No events yet. Click "+ New" to add one.</td></tr>`
+    return
+  }
+  const statusBadge = (s) => {
+    const m = { upcoming:'badge-pending', past:'badge-confirmed', cancelled:'badge-flagged' }
+    return `<span class="badge ${m[s] || ''}">${s || '—'}</span>`
+  }
+  tbody.innerHTML = _events.map(e => `
+    <tr>
+      <td style="font-size:.88rem;">${e.title || '—'}</td>
+      <td style="font-size:.78rem;color:var(--muted);">${e.event_date ? fmtDate(e.event_date) : '—'}</td>
+      <td style="font-size:.78rem;color:var(--muted);">${e.location || '—'}</td>
+      <td>${statusBadge(e.status)}</td>
+      <td><span class="badge ${e.published ? 'badge-confirmed' : 'badge-pending'}">${e.published ? 'Published' : 'Hidden'}</span></td>
+      <td style="text-align:right;">
+        <button class="btn btn-outline btn-xs" onclick="openEventModal(${e.id})">Edit</button>
+      </td>
+    </tr>`).join('')
+}
+
+function openEventModal(id) {
+  _editingEvent = id ? _events.find(e => e.id === id) : null
+  document.getElementById('event-modal-title').textContent = _editingEvent ? 'Edit Event' : 'New Event'
+  setVal('ev-title',       _editingEvent?.title       || '')
+  setVal('ev-description', _editingEvent?.description || '')
+  setVal('ev-date',        _editingEvent?.event_date  || '')
+  setVal('ev-type',        _editingEvent?.event_type  || '')
+  setVal('ev-location',    _editingEvent?.location    || '')
+  setVal('ev-cover',       _editingEvent?.cover_image || '')
+  setVal('ev-status',      _editingEvent?.status      || 'upcoming')
+  setVal('ev-published',   _editingEvent ? String(!!_editingEvent.published) : 'false')
+  setVal('ev-rsvp',        _editingEvent?.rsvp_url    || '')
+  document.getElementById('ev-delete-btn').style.display = _editingEvent ? '' : 'none'
+  openModal('event-modal')
+}
+
+async function saveEvent() {
+  const title = getVal('ev-title')
+  const date  = getVal('ev-date')
+  if (!title || !date) { toast('Title and date required'); return }
+
+  const payload = {
+    title,
+    description:  getVal('ev-description'),
+    event_date:   date,
+    event_type:   getVal('ev-type')     || null,
+    location:     getVal('ev-location') || null,
+    cover_image:  getVal('ev-cover')    || null,
+    status:       getVal('ev-status')   || 'upcoming',
+    rsvp_url:     getVal('ev-rsvp')     || null,
+    published:    getVal('ev-published') === 'true',
+  }
+
+  let res
+  if (_editingEvent) {
+    res = await sb.from('events').update(payload).eq('id', _editingEvent.id)
+  } else {
+    res = await sb.from('events').insert(payload)
+  }
+  if (res.error) { toast('Error: ' + res.error.message); return }
+  toast(_editingEvent ? 'Event updated' : 'Event created')
+  closeModal('event-modal')
+  loadContent()
+}
+
+async function deleteEvent() {
+  if (!_editingEvent) return
+  if (!confirm(`Delete "${_editingEvent.title}"? This cannot be undone.`)) return
+  const { error } = await sb.from('events').delete().eq('id', _editingEvent.id)
+  if (error) { toast('Delete failed: ' + error.message); return }
+  toast('Event deleted')
+  closeModal('event-modal')
+  loadContent()
 }
 
 async function testEpConnection() {

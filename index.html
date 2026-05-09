@@ -1112,8 +1112,8 @@
     <div class="nav-logo" onclick="showPage('landing')">KADH <span>COLLECTIVE</span></div>
     <div class="nav-links">
       <a onclick="scrollToSection('collection')" style="cursor:pointer">Collection</a>
-      <a onclick="scrollToSection('collection')" style="cursor:pointer">New Arrivals</a>
       <a onclick="showPage('about')"              style="cursor:pointer">Our Story</a>
+      <a onclick="showPage('community')"          style="cursor:pointer">Community</a>
     </div>
     <div class="nav-right">
       <select class="currency-sel" onchange="setCurrency(this.value)" id="currency-nav">
@@ -1175,17 +1175,21 @@
       </div>
       <div class="footer-col">
         <h4>Shop</h4>
-        <a onclick="scrollToSection('collection')">All Abayas</a>
-        <a onclick="scrollToSection('collection')">New Arrivals</a>
-        <a onclick="scrollToSection('collection')">Cardigan Abaya</a>
-        <a onclick="scrollToSection('collection')">Dress</a>
+        <a onclick="scrollToSection('collection')" style="cursor:pointer">All Abayas</a>
+        <a onclick="scrollToSection('collection')" style="cursor:pointer">New Arrivals</a>
+        <a onclick="scrollToSection('collection')" style="cursor:pointer">Cardigan Abaya</a>
+        <a onclick="scrollToSection('collection')" style="cursor:pointer">Dress</a>
+      </div>
+      <div class="footer-col">
+        <h4>Brand</h4>
+        <a onclick="showPage('about')"     style="cursor:pointer">Our Story</a>
+        <a onclick="showPage('community')" style="cursor:pointer">Community</a>
+        <a onclick="showPage('track')"     style="cursor:pointer">Track Order</a>
       </div>
       <div class="footer-col">
         <h4>Help</h4>
-        <a>Size Guide</a>
-        <a>Shipping & Returns</a>
-        <a onclick="openWA(null)">Contact Us</a>
-        <a>FAQ</a>
+        <a onclick="openWA(null)" style="cursor:pointer">Contact Us</a>
+        <a onclick="showPage('about')" style="cursor:pointer">About KADH</a>
       </div>
     </div>
     <div class="footer-bottom">© 2025 KADH Collective. All rights reserved.</div>
