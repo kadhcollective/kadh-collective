@@ -85,14 +85,44 @@ window.KADH_CONFIG = {
     'aramex':   'https://www.aramex.com/track/results?ShipmentNumber={{tracking}}',
   },
 
-  // ─── About Us page (filled in Phase 5) ────────────────────
+  // ─── About Us page copy
   about: {
-    // Drafted in Phase 5: Story, Values, Behind The Process, All Girls Community
+    eyebrow:  'Our Story',
+    title:    'Modesty without compromise.',
+    subtitle: 'KADH was born from a simple observation: that the modern Muslim woman deserves clothing that moves with her, not against her.',
+
+    blocks: [
+      {
+        eyebrow: 'Our Story',
+        title:   'Founded in Kuala Lumpur, made for everywhere',
+        body:    "KADH was started in 2024 with one promise — that an abaya should feel as considered as the woman who wears it. We grew tired of choosing between modesty and ease, between elegance and the realities of daily life. So we made the brand we wanted to wear. Every collection begins with a question: what would she actually want?",
+      },
+      {
+        eyebrow: 'Our Values',
+        title:   'What we stand for',
+        body:    "Modesty without compromise. Craftsmanship over speed. Pieces built for everyday rhythm — for prayer, work, school runs, and the quiet moments in between. We choose intention over trend, and we'd rather make fewer things well than many things fast.",
+      },
+      {
+        eyebrow: 'Behind The Process',
+        title:   'Slow on purpose',
+        body:    "Each piece begins as a conversation — between us, our seamstresses, and the women who'll wear it. We work in small batches with fabric chosen for breathability and drape. Every abaya is hand-finished in our atelier in KL: seams pressed twice, hems blind-stitched, labels sewn by hand. Built to last seasons, not trends.",
+      },
+      {
+        eyebrow: 'The All-Girls Community',
+        title:   'A sisterhood, not a customer base',
+        body:    "KADH is more than a label. The women who wear our pieces are part of the brand — not as customers, but as collaborators. We host gatherings, listen to feedback, and design with their lives in mind. There is no marketing without them. There is no KADH without them.",
+      },
+    ],
+
+    cta: {
+      title:     'Step into the collection.',
+      subtitle:  'Pieces made with intention, ready when you are.',
+      primary:   { label: 'Shop Collection',     href: '#collection' },
+      secondary: { label: 'Join the Community',  href: '/community' },
+    },
   },
 
-  // ─── Community page (filled in Phase 5) ───────────────────
-  community: {
-    // Drafted in Phase 5: IG embed, Journal, Events, Newsletter signup
-  },
+  // ─── Community page copy (filled in 5c)
+  community: {},
 
 }

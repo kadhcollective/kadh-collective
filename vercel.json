@@ -20,5 +20,9 @@
   ],
   "redirects": [
     { "source": "/admin.html", "destination": "/admin", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/about",     "destination": "/index.html" },
+    { "source": "/community", "destination": "/index.html" }
   ]
 }

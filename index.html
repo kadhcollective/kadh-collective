@@ -13,6 +13,7 @@
 
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
 
   <style>
     /* ─── RESET & ROOT ─────────────────────────────── */
@@ -979,6 +980,42 @@
       .pdp-size-guide-diagram { flex-direction: column; }
       .pdp-related { padding: 2rem 1rem 3rem; }
     }
+
+    /* ─── ABOUT US PAGE (Phase 5a) ─── */
+    .about-wrap          { max-width: 960px; margin: 0 auto; padding: 4rem 1.5rem 6rem; }
+    .about-hero          { text-align: center; padding: 2rem 0 4rem; border-bottom: 1px solid var(--sand); margin-bottom: 4rem; }
+    .about-hero-eyebrow  { font-size: .7rem;  letter-spacing: .25em; text-transform: uppercase; color: var(--gold); margin-bottom: 1rem; }
+    .about-hero-title    { font-family: var(--font-display); font-size: 3rem; font-weight: 300; line-height: 1.15; margin-bottom: 1.25rem; color: var(--dark); }
+    .about-hero-subtitle { font-size: 1rem;  color: var(--mid);   max-width: 580px; margin: 0 auto; line-height: 1.75; }
+
+    .about-block         { margin-bottom: 4rem; padding-bottom: 4rem; border-bottom: 1px solid var(--sand); }
+    .about-block:last-child { border-bottom: none; padding-bottom: 1rem; margin-bottom: 2rem; }
+    .about-block-eyebrow { font-size: .68rem; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); margin-bottom: .75rem; }
+    .about-block-title   { font-family: var(--font-display); font-size: 1.85rem; font-weight: 300; margin-bottom: 1.25rem; color: var(--dark); line-height: 1.25; }
+    .about-block-body    { font-size: .95rem; color: var(--mid); line-height: 1.85; max-width: 720px; }
+
+    .about-cta           { text-align: center; padding: 4rem 1.5rem; background: var(--soft); border-radius: var(--radius-md); margin-top: 4rem; border: 1px solid var(--sand); }
+    .about-cta h2        { font-family: var(--font-display); font-size: 2rem; font-weight: 300; margin-bottom: .5rem; color: var(--dark); }
+    .about-cta p         { color: var(--mid); margin-bottom: 1.75rem; font-size: .95rem; }
+    .about-cta-buttons   { display: inline-flex; gap: .75rem; flex-wrap: wrap; justify-content: center; }
+    .about-cta .btn-primary, .about-cta .btn-outline {
+      padding: 12px 28px; font-size: .78rem; letter-spacing: .15em;
+      text-transform: uppercase; text-decoration: none; cursor: pointer; display: inline-block;
+    }
+    .about-cta .btn-primary { background: var(--dark); color: #fff; border: 1px solid var(--dark); }
+    .about-cta .btn-outline { background: transparent; color: var(--dark); border: 1px solid var(--dark); }
+
+    @media (max-width: 720px) {
+      .about-wrap          { padding: 2rem 1rem 4rem; }
+      .about-hero          { padding: 1rem 0 3rem; margin-bottom: 3rem; }
+      .about-hero-title    { font-size: 2.1rem; }
+      .about-hero-subtitle { font-size: .9rem; }
+      .about-block         { margin-bottom: 3rem; padding-bottom: 3rem; }
+      .about-block-title   { font-size: 1.5rem; }
+      .about-block-body    { font-size: .88rem; line-height: 1.8; }
+      .about-cta           { padding: 3rem 1rem; }
+      .about-cta h2        { font-size: 1.6rem; }
+    }
   </style>
 </head>
 <body>
@@ -990,9 +1027,9 @@
   <nav>
     <div class="nav-logo" onclick="showPage('landing')">KADH <span>COLLECTIVE</span></div>
     <div class="nav-links">
-      <a onclick="scrollToSection('collection')">Collection</a>
-      <a onclick="scrollToSection('collection')">New Arrivals</a>
-      <a onclick="scrollToSection('story')">Our Story</a>
+      <a onclick="scrollToSection('collection')" style="cursor:pointer">Collection</a>
+      <a onclick="scrollToSection('collection')" style="cursor:pointer">New Arrivals</a>
+      <a onclick="showPage('about')"              style="cursor:pointer">Our Story</a>
     </div>
     <div class="nav-right">
       <select class="currency-sel" onchange="setCurrency(this.value)" id="currency-nav">
@@ -1019,7 +1056,7 @@
     <div class="ships-badge">Worldwide Shipping Available</div>
     <div class="hero-cta">
       <button class="btn-primary" onclick="scrollToSection('collection')">Shop Collection</button>
-      <button class="btn-outline" onclick="scrollToSection('story')">Our Story</button>
+      <button class="btn-outline" onclick="showPage('about')">Our Story</button>
     </div>
     <div class="hero-ornament">— Est. 2024, Kuala Lumpur —</div>
   </div>
@@ -1481,6 +1518,44 @@
 
 <!-- ════════════════════════════════════════════
      TRACKING PAGE — customer-facing live tracker
+════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════════════
+     ABOUT US PAGE (Phase 5a)
+════════════════════════════════════════════ -->
+<div id="page-about" class="page">
+  <nav>
+    <div class="nav-logo" onclick="showPage('landing')">KADH <span>COLLECTIVE</span></div>
+    <div class="nav-links">
+      <a onclick="showPage('landing')" style="cursor:pointer">Collection</a>
+      <a onclick="showPage('about')"   style="cursor:pointer" class="active">Our Story</a>
+    </div>
+    <div class="nav-right">
+      <select class="currency-sel" onchange="setCurrency(this.value)" id="currency-about">
+        <option value="MYR">MYR</option><option value="USD">USD</option><option value="AED">AED</option>
+        <option value="GBP">GBP</option><option value="EUR">EUR</option><option value="SGD">SGD</option>
+        <option value="AUD">AUD</option><option value="SAR">SAR</option>
+      </select>
+      <button class="cart-btn" onclick="showPage('cart')">Bag <span class="cart-count" id="cart-count-about">0</span></button>
+    </div>
+  </nav>
+
+  <div class="about-wrap">
+    <section class="about-hero">
+      <div class="about-hero-eyebrow"  id="about-hero-eyebrow"></div>
+      <h1  class="about-hero-title"    id="about-hero-title"></h1>
+      <p   class="about-hero-subtitle" id="about-hero-subtitle"></p>
+    </section>
+
+    <section id="about-blocks"></section>
+
+    <section class="about-cta" id="about-cta"></section>
+  </div>
+
+  <div class="mini-footer">© 2025 KADH Collective</div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     ORDER TRACKING PAGE
 ════════════════════════════════════════════ -->
 <div id="page-track" class="page">
   <nav>
@@ -2267,9 +2342,63 @@
 
     document.querySelectorAll('.currency-sel').forEach(s => s.value = activeCurrency)
 
-    if (page === 'cart')     renderCart()
-    if (page === 'checkout') { renderOrderSummary(); updateShipping(); }
-    if (page === 'track')    initTrackPage()
+    if (page === 'cart')      renderCart()
+    if (page === 'checkout')  { renderOrderSummary(); updateShipping(); }
+    if (page === 'track')     initTrackPage()
+    if (page === 'about')     renderAbout()
+  }
+
+  /* ── Render About Us page from KADH_CONFIG (Phase 5a) ── */
+  function renderAbout() {
+    const cfg = (window.KADH_CONFIG && window.KADH_CONFIG.about) || {}
+    const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt || '' }
+
+    setText('about-hero-eyebrow',  cfg.eyebrow  || 'Our Story')
+    setText('about-hero-title',    cfg.title    || 'Our Story')
+    setText('about-hero-subtitle', cfg.subtitle || '')
+
+    const blocksEl = document.getElementById('about-blocks')
+    if (blocksEl && Array.isArray(cfg.blocks)) {
+      blocksEl.innerHTML = cfg.blocks.map(b => `
+        <article class="about-block">
+          <div class="about-block-eyebrow">${b.eyebrow || ''}</div>
+          <h2  class="about-block-title">${b.title  || ''}</h2>
+          <p   class="about-block-body">${b.body   || ''}</p>
+        </article>
+      `).join('')
+    }
+
+    const ctaEl = document.getElementById('about-cta')
+    if (ctaEl && cfg.cta) {
+      ctaEl.innerHTML = `
+        <h2>${cfg.cta.title || ''}</h2>
+        <p>${cfg.cta.subtitle || ''}</p>
+        <div class="about-cta-buttons">
+          ${cfg.cta.primary   ? `<a class="btn-primary" href="${cfg.cta.primary.href}"   onclick="event.preventDefault(); aboutNavigate('${cfg.cta.primary.href}')">${cfg.cta.primary.label}</a>`     : ''}
+          ${cfg.cta.secondary ? `<a class="btn-outline" href="${cfg.cta.secondary.href}" onclick="event.preventDefault(); aboutNavigate('${cfg.cta.secondary.href}')">${cfg.cta.secondary.label}</a>` : ''}
+        </div>
+      `
+    }
+  }
+
+  function aboutNavigate(href) {
+    if (href === '#collection') {
+      showPage('landing')
+      setTimeout(() => {
+        const el = document.getElementById('collection')
+        if (el) el.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
+    } else if (href === '/community' || href === 'community') {
+      showPage('community')
+    } else if (href.startsWith('#')) {
+      showPage('landing')
+      setTimeout(() => {
+        const el = document.querySelector(href)
+        if (el) el.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
+    } else {
+      window.location.href = href
+    }
   }
 
   function scrollToSection(id) {
@@ -2645,7 +2774,18 @@
     await loadProducts()           // products render with correct currency
     updateShipping()
     handleStripeReturn()
+    handleDirectUrl()              // /about, /community → showPage on load
   })()
+
+  /* ── Map URL path → showPage on first load (Phase 5a/5c) ── */
+  function handleDirectUrl() {
+    const path = (window.location.pathname || '/').replace(/\/$/, '') || '/'
+    if (path === '/about') showPage('about')
+    else if (path === '/community' && document.getElementById('page-community')) {
+      showPage('community')
+    }
+    // Other paths: stay on landing
+  }
 
 
   /* ══════════════════════════════════════════════════════
