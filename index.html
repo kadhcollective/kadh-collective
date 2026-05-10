@@ -149,8 +149,13 @@
       text-transform: uppercase;
       transition: background var(--transition);
       border-radius: var(--radius-sm);
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: rgba(0,0,0,.1);
+      min-height: 44px;
     }
     .btn-primary:hover { background: var(--gold); }
+    .btn-primary:active { transform: scale(0.98); }
 
     .btn-outline {
       background: none;
@@ -162,8 +167,13 @@
       text-transform: uppercase;
       transition: all var(--transition);
       border-radius: var(--radius-sm);
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: rgba(0,0,0,.1);
+      min-height: 44px;
     }
     .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-outline:active { transform: scale(0.98); }
 
     /* ─── HERO ─────────────────────────────────────── */
     .hero {
@@ -700,8 +710,27 @@
       .form-row { grid-template-columns: 1fr; }
       .wallet-grid { grid-template-columns: 1fr; }
       .cart-item { grid-template-columns: 75px 1fr auto; gap: .85rem; }
-      .cart-actions { flex-direction: column; }
-      .cart-actions button { width: 100%; }
+      .cart-actions {
+        flex-direction: column-reverse;
+        position: sticky;
+        bottom: 0;
+        background: var(--cream);
+        padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+        margin: 1.5rem -1rem 0;
+        border-top: 1px solid var(--sand);
+        box-shadow: 0 -8px 24px rgba(44,36,24,.08);
+        z-index: 1000;  /* above WA bubble (999) so taps always land */
+      }
+      .cart-actions button {
+        width: 100%;
+        min-height: 50px;
+        font-size: .8rem;
+      }
+      /* Pull WA bubble up on cart/checkout so it doesn't visually crowd the sticky CTA */
+      #page-cart.active ~ .wa-widget,
+      #page-checkout.active ~ .wa-widget {
+        bottom: calc(80px + env(safe-area-inset-bottom));
+      }
       .wa-widget { bottom: 20px; right: 16px; }
       .wa-popup { width: 230px; }
     }
@@ -1614,8 +1643,9 @@
   <nav>
     <div class="nav-logo" onclick="showPage('landing')">KADH <span>COLLECTIVE</span></div>
     <div class="nav-links">
-      <a onclick="showPage('landing')" style="cursor:pointer">Collection</a>
-      <a onclick="showPage('about')"   style="cursor:pointer" class="active">Our Story</a>
+      <a onclick="showPage('landing')"  style="cursor:pointer">Collection</a>
+      <a onclick="showPage('about')"    style="cursor:pointer" class="active">Our Story</a>
+      <a onclick="showPage('community')" style="cursor:pointer">Community</a>
     </div>
     <div class="nav-right">
       <select class="currency-sel" onchange="setCurrency(this.value)" id="currency-about">
