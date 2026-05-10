@@ -18,8 +18,8 @@
     }
   ],
   "redirects": [
-    { "source": "/admin.html",     "destination": "/admin",     "permanent": true },
-    { "source": "/index.html",     "destination": "/",          "permanent": true }
+    { "source": "/admin.html", "destination": "/admin", "permanent": true },
+    { "source": "/index.html", "destination": "/",      "permanent": true }
   ],
   "rewrites": [
     { "source": "/admin",     "destination": "/admin.html" },

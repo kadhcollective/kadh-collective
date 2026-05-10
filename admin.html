@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KADH Admin</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#6B0E0E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Forum&family=Tenor+Sans&display=swap" rel="stylesheet">
@@ -168,7 +171,12 @@
     padding: 8px 18px; font-size: .74rem; letter-spacing: .1em;
     text-transform: uppercase; border-radius: var(--radius);
     transition: all var(--trans); border: none; white-space: nowrap;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(0,0,0,.1);
+    min-height: 36px;
   }
+  .btn:active { transform: scale(0.97); }
   .btn-primary { background: var(--crimson); color: var(--white); border: 1px solid var(--crimson); }
   .btn-primary:hover { background: var(--crimson-l); }
   .btn-outline { background: none; border: 1px solid var(--border); color: var(--mid); }
@@ -386,10 +394,29 @@
     .sidebar.open { transform: translateX(0); }
     .main { margin-left: 0 !important; }
     .menu-btn { display: block; }
-    .content { padding: 1.25rem; }
+    .content { padding: 1.25rem 1rem 5rem; }
     .settings-grid { grid-template-columns: 1fr; }
     .order-detail-grid { grid-template-columns: 1fr; }
     .dims-grid { grid-template-columns: 1fr 1fr; }
+    /* Bigger touch targets on mobile */
+    .btn      { min-height: 44px; padding: 10px 18px; font-size: .76rem; }
+    .btn-sm   { min-height: 40px; padding: 9px 14px; font-size: .72rem; }
+    .btn-xs   { min-height: 36px; padding: 8px 12px; font-size: .68rem; }
+    .nav-item { padding: 14px 1.2rem; }
+    /* Inputs at 16px+ to prevent iOS zoom on focus */
+    .field-input,
+    .search-input,
+    .filter-select { font-size: 16px; padding: 12px 14px; }
+    /* Tables scroll horizontally on mobile (cleaner than squeezing) */
+    .card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { min-width: 640px; }
+    /* Toolbar stacks on mobile */
+    .toolbar { flex-wrap: wrap; gap: .5rem; }
+    .toolbar > * { flex: 1 1 auto; }
+    .toolbar > .btn { flex: 0 0 auto; }
+    /* Modals: full-screen on small phones for usability */
+    .modal-overlay { padding: 0; }
+    .modal { max-width: 100%; max-height: 100vh; min-height: 100vh; border-radius: 0; }
   }
 </style>
 <body>
@@ -1019,6 +1046,15 @@
         <div class="field-group settings-full">
           <label class="field-label">Description</label>
           <textarea class="field-input" id="prod-desc" rows="3" style="resize:vertical;"></textarea>
+        </div>
+
+        <!-- Images -->
+        <div class="field-group settings-full" style="margin-top:.5rem;">
+          <label class="field-label" style="margin-bottom:.75rem;">Images</label>
+          <div id="prod-images-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.6rem;margin-bottom:.75rem;"></div>
+          <input type="file" id="prod-image-files" accept="image/*" multiple onchange="uploadProductImages(this)" style="display:none;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('prod-image-files').click()">+ Add Images</button>
+          <span id="prod-image-status" style="font-size:.75rem;margin-left:.75rem;color:var(--muted);"></span>
         </div>
 
         <!-- Shipping Dimensions — admin only -->
@@ -1748,7 +1784,93 @@ function openProductModal(id) {
   setVal('prod-length',    p?.length_cm  || '')
   setVal('prod-width',     p?.width_cm   || '')
   setVal('prod-height',    p?.height_cm  || '')
+  // Phase 7-Op-A: load existing images
+  _editingImages = parseProductImages(p)
+  renderProductImagesGrid()
   openModal('product-modal')
+}
+
+// ── Phase 7-Op-A: Image upload helpers ─────────────────────
+let _editingImages = []
+
+function parseProductImages(p) {
+  if (!p) return []
+  const out = []
+  // images column may be JSON array, PG text array, or null
+  if (Array.isArray(p.images)) {
+    p.images.forEach(u => { if (u) out.push(String(u)) })
+  } else if (typeof p.images === 'string' && p.images) {
+    try {
+      const parsed = JSON.parse(p.images)
+      if (Array.isArray(parsed)) parsed.forEach(u => { if (u) out.push(String(u)) })
+    } catch (_) {
+      // PostgreSQL text array format like {url1,url2}
+      p.images.replace(/^\{|\}$/g, '').split(',').forEach(u => {
+        const cleaned = u.replace(/^"(.*)"$/, '$1').trim()
+        if (cleaned) out.push(cleaned)
+      })
+    }
+  }
+  // Legacy single-image field
+  if (p.image_url && !out.includes(p.image_url)) out.push(p.image_url)
+  return out
+}
+
+function renderProductImagesGrid() {
+  const grid = document.getElementById('prod-images-grid')
+  if (!grid) return
+  if (!_editingImages.length) {
+    grid.innerHTML = '<div style="font-size:.78rem;color:var(--muted);font-style:italic;padding:.5rem 0;">No images yet — click "+ Add Images" below.</div>'
+    return
+  }
+  grid.innerHTML = _editingImages.map((url, i) => `
+    <div style="position:relative;aspect-ratio:1/1;border-radius:6px;overflow:hidden;border:1px solid var(--border);">
+      <img src="${url}" style="width:100%;height:100%;object-fit:cover;" alt="Product image ${i+1}">
+      <button type="button" onclick="removeProductImage(${i})"
+        style="position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;font-size:.85rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;"
+        title="Remove">×</button>
+      ${i === 0 ? '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;text-align:center;padding:3px;">Cover</div>' : ''}
+    </div>
+  `).join('')
+}
+
+function removeProductImage(i) {
+  _editingImages.splice(i, 1)
+  renderProductImagesGrid()
+}
+
+async function uploadProductImages(input) {
+  const files = Array.from(input.files || [])
+  if (!files.length) return
+  const status = document.getElementById('prod-image-status')
+  status.textContent = `Uploading ${files.length} file${files.length > 1 ? 's' : ''}…`
+  status.style.color = 'var(--muted)'
+
+  let ok = 0
+  for (const file of files) {
+    try {
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-').toLowerCase()
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`
+      const { error: upErr } = await sb.storage.from('products').upload(path, file, {
+        cacheControl: '31536000',
+        upsert: false,
+      })
+      if (upErr) throw upErr
+      const { data: { publicUrl } } = sb.storage.from('products').getPublicUrl(path)
+      _editingImages.push(publicUrl)
+      ok++
+    } catch (e) {
+      console.error('[upload]', e)
+      status.textContent = '✗ ' + e.message
+      status.style.color = 'var(--danger)'
+    }
+  }
+  if (ok === files.length) {
+    status.textContent = `✓ Uploaded ${ok}`
+    status.style.color = 'var(--success,#080)'
+  }
+  input.value = ''
+  renderProductImagesGrid()
 }
 
 async function saveProduct() {
@@ -1765,6 +1887,9 @@ async function saveProduct() {
     length_cm:           parseFloat(getVal('prod-length')) || 0,
     width_cm:            parseFloat(getVal('prod-width'))  || 0,
     height_cm:           parseFloat(getVal('prod-height')) || 0,
+    // Phase 7-Op-A: persist images array and primary image URL
+    images:              _editingImages,
+    image_url:           _editingImages[0] || null,
   }
   if (id) {
     const { error } = await sb.from('products').update(payload).eq('id', id)

@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Don't index the admin panel
+Disallow: /admin
+Disallow: /admin.html
+
+# Don't index Stripe return URLs (avoids leaking session ids)
+Disallow: /*?stripe=*
+
+Sitemap: https://kadhcollective.com/sitemap.xml

@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KADH Collective — Modest Abayas</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="description" content="KADH Collective — modest abayas, crafted in quiet elegance. Shipped worldwide from Kuala Lumpur.">
+  <meta name="theme-color" content="#6B0E0E">
   <meta name="description" content="Modest fashion for the modern Muslim woman. Abayas crafted with intention — refined, comfortable, and made to move with you. Ships worldwide.">
 
   <!-- Google Fonts -->
@@ -374,18 +377,26 @@
     .qty-btn {
       background: none;
       border: 1px solid var(--sand);
-      width: 30px;
-      height: 30px;
-      font-size: 1rem;
+      width: 36px;
+      height: 36px;
+      font-size: 1.1rem;
       color: var(--dark);
       display: flex;
       align-items: center;
       justify-content: center;
       transition: all var(--transition);
       border-radius: var(--radius-sm);
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: rgba(0,0,0,.1);
     }
     .qty-btn:hover { border-color: var(--gold); color: var(--gold); }
-    .qty-num { font-size: .88rem; min-width: 22px; text-align: center; }
+    .qty-btn:active { transform: scale(0.92); }
+    .qty-num { font-size: .92rem; min-width: 28px; text-align: center; }
+    @media (max-width: 720px) {
+      .qty-btn { width: 44px; height: 44px; font-size: 1.25rem; }
+      .qty-num { min-width: 32px; font-size: 1rem; }
+    }
 
     .remove-btn {
       background: none;
@@ -971,11 +982,37 @@
       letter-spacing: .15em;
       text-transform: uppercase;
       font-family: var(--font-body);
-      transition: background var(--transition);
+      transition: background var(--transition), transform .1s ease;
       border-radius: var(--radius-sm);
       margin-bottom: 2rem;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: rgba(0,0,0,.1);
+      min-height: 50px;
     }
     .pdp-add-btn:hover { background: var(--gold); }
+    .pdp-add-btn:active { transform: scale(0.98); }
+    .pdp-add-btn[disabled] { cursor: not-allowed; transform: none; }
+
+    /* Place Order on Checkout */
+    .checkout-place-order {
+      width: 100%;
+      padding: 16px;
+      font-size: .82rem;
+      border-radius: var(--radius-md);
+      min-height: 54px;
+    }
+    @media (max-width: 720px) {
+      .checkout-place-order {
+        position: sticky;
+        bottom: 0;
+        margin: 1rem -1rem 0;
+        border-radius: 0;
+        padding: 18px 32px;
+        z-index: 1000;
+        box-shadow: 0 -8px 24px rgba(44,36,24,.12);
+      }
+    }
 
     .pdp-trust {
       display: flex;
@@ -1008,6 +1045,18 @@
       .pdp-measurements { grid-template-columns: 1fr 1fr; }
       .pdp-size-guide-diagram { flex-direction: column; }
       .pdp-related { padding: 2rem 1rem 3rem; }
+      /* Sticky Add-to-Bag CTA on mobile so it's always reachable */
+      .pdp-add-btn {
+        position: sticky;
+        bottom: 0;
+        margin-left: -1rem;
+        margin-right: -1rem;
+        margin-bottom: 0;
+        border-radius: 0;
+        padding: 18px 32px;
+        z-index: 1000;
+        box-shadow: 0 -8px 24px rgba(44,36,24,.12);
+      }
     }
 
     /* ─── ABOUT US PAGE (Phase 5a) ─── */
@@ -1417,7 +1466,7 @@
           </p>
         </div>
 
-        <button class="btn-primary" style="width:100%;padding:16px;font-size:.82rem;border-radius:var(--radius-md)" onclick="placeOrder()">
+        <button class="btn-primary checkout-place-order" onclick="placeOrder()">
           Place Order
         </button>
 
