@@ -1851,12 +1851,12 @@ async function uploadProductImages(input) {
     try {
       const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-').toLowerCase()
       const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`
-      const { error: upErr } = await sb.storage.from('products').upload(path, file, {
+      const { error: upErr } = await sb.storage.from('product-images').upload(path, file, {
         cacheControl: '31536000',
         upsert: false,
       })
       if (upErr) throw upErr
-      const { data: { publicUrl } } = sb.storage.from('products').getPublicUrl(path)
+      const { data: { publicUrl } } = sb.storage.from('product-images').getPublicUrl(path)
       _editingImages.push(publicUrl)
       ok++
     } catch (e) {
