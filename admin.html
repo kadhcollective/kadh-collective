@@ -582,6 +582,7 @@
       <option value="flagged">Flagged</option>
     </select>
     <button class="btn btn-outline btn-sm" onclick="loadOrders()">↺ Refresh</button>
+    <button class="btn btn-outline btn-sm" onclick="exportOrdersCsv()">⤓ Export CSV</button>
   </div>
   <div class="card" style="padding:0;overflow:hidden;">
     <table>
@@ -1911,6 +1912,93 @@ async function loadOrders() {
   const { data } = await sb.from('orders').select('*').order('created_at',{ascending:false})
   _orders = data || []
   renderOrders()
+}
+
+// ── Phase 7-Op-C: Export orders → CSV ──────────────────────
+function exportOrdersCsv() {
+  // Respect current search + status filter, just like the visible table
+  const q      = (document.getElementById('ord-search')?.value || '').toLowerCase()
+  const status = document.getElementById('ord-status-filter')?.value || ''
+  const rows   = _orders.filter(o =>
+    (!status || o.status === status) &&
+    (!q || (o.order_ref + o.customer_name + o.email).toLowerCase().includes(q))
+  )
+  if (!rows.length) { toast('No orders to export'); return }
+
+  const headers = [
+    'order_ref', 'created_at', 'paid_at', 'status',
+    'customer_name', 'email', 'phone',
+    'subtotal', 'shipping_cost', 'total', 'currency',
+    'shipping_method', 'shipping_eta',
+    'country', 'address',
+    'items', 'item_count',
+    'stripe_session_id', 'stripe_payment_intent',
+    'ep_courier', 'ep_awb', 'ep_tracking_no',
+  ]
+
+  const fmtItems = (items) => {
+    if (!Array.isArray(items)) return ''
+    return items.map(i => {
+      const name = i.name || i.title || 'Item'
+      const qty  = i.qty || i.quantity || 1
+      return `${name} x${qty}`
+    }).join(' | ')
+  }
+
+  const csvEscape = (v) => {
+    if (v === null || v === undefined) return ''
+    const s = String(v)
+    // Quote if it contains comma, quote, or newline; escape inner quotes by doubling
+    if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"'
+    return s
+  }
+
+  const lines = [headers.join(',')]
+  for (const o of rows) {
+    const items     = Array.isArray(o.items) ? o.items : []
+    const itemCount = items.reduce((sum, i) => sum + Number(i.qty || i.quantity || 1), 0)
+    const row = [
+      o.order_ref,
+      o.created_at,
+      o.paid_at || '',
+      o.status,
+      o.customer_name,
+      o.email,
+      o.phone,
+      o.subtotal,
+      o.shipping_cost,
+      o.total,
+      o.currency || 'MYR',
+      o.shipping_method,
+      o.shipping_eta,
+      o.country,
+      o.address,
+      fmtItems(items),
+      itemCount,
+      o.stripe_session_id || '',
+      o.stripe_payment_intent || '',
+      o.ep_courier || '',
+      o.ep_awb || '',
+      o.ep_tracking_no || '',
+    ]
+    lines.push(row.map(csvEscape).join(','))
+  }
+
+  // Add BOM so Excel opens UTF-8 correctly (handles RM symbol, accents)
+  const csv = '﻿' + lines.join('\r\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+
+  const a = document.createElement('a')
+  const ts = new Date().toISOString().slice(0, 10)
+  a.href = url
+  a.download = `kadh-orders-${ts}.csv`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+
+  toast(`Exported ${rows.length} order${rows.length === 1 ? '' : 's'}`)
 }
 
 function renderOrders() {

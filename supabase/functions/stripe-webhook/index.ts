@@ -104,7 +104,7 @@ serve(async (req) => {
     )
 
     const { data: order } = await supabase
-      .from("orders").select("status").eq("order_ref", order_ref).single()
+      .from("orders").select("status, items").eq("order_ref", order_ref).single()
 
     if (!order) {
       console.error(`[stripe-webhook] Order ${order_ref} not found`)
@@ -132,6 +132,56 @@ serve(async (req) => {
       console.error(`[stripe-webhook] Failed to mark order paid:`, updateErr)
       // Don't return 500 — Stripe will keep retrying. Better to log and acknowledge.
       return new Response(`OK (db update failed: ${updateErr.message})`, { status: 200 })
+    }
+
+    // Phase 7-Op-B: Decrement product stock + raise low-stock alerts.
+    // Idempotency: this block only runs once because of the
+    // `if (order.status === "paid") return early` check above.
+    const items = Array.isArray(order?.items) ? order.items : []
+    for (const item of items) {
+      const pid = Number(item?.product_id)
+      const qty = Number(item?.qty ?? item?.quantity ?? 1)
+      if (!pid || qty <= 0) continue
+
+      try {
+        const { data: stockRows, error: stockErr } = await supabase
+          .rpc("decrement_product_stock", { p_id: pid, p_qty: qty })
+
+        if (stockErr) {
+          console.error(`[stock] decrement failed for product ${pid}:`, stockErr.message)
+          continue
+        }
+        const row = (stockRows as any[])?.[0]
+        if (!row) {
+          console.warn(`[stock] product ${pid} not found, skipping`)
+          continue
+        }
+
+        const newStock  = Number(row.new_stock ?? 0)
+        const threshold = Number(row.threshold ?? 3)
+        console.log(`[stock] product ${pid}: ${newStock} left (threshold ${threshold})`)
+
+        if (newStock <= threshold) {
+          // Don't pile up duplicate alerts — only create one if no unresolved alert already
+          const { data: existing } = await supabase
+            .from("stock_alerts")
+            .select("id")
+            .eq("product_id", pid)
+            .eq("resolved", false)
+            .limit(1)
+
+          if (!existing || existing.length === 0) {
+            await supabase.from("stock_alerts").insert({
+              product_id:  pid,
+              stock_count: newStock,
+              threshold,
+            })
+            console.log(`[stock] alert raised for product ${pid}`)
+          }
+        }
+      } catch (e) {
+        console.error(`[stock] exception for product ${pid}:`, (e as Error).message)
+      }
     }
 
     // Trigger receipt email (await so we know it succeeded)

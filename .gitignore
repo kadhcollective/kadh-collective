@@ -17,6 +17,10 @@ node_modules/
 .supabase
 supabase/.temp
 
+# Local deploy scripts (contain paths/tokens — never commit)
+setup_git.sh
+push.sh
+
 # OS / editor
 .DS_Store
 Thumbs.db
@@ -31,7 +35,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Build outputs
+# Build outputs (none yet, but for future)
 dist/
 build/
 .cache/
