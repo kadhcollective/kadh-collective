@@ -1045,7 +1045,11 @@
           </select>
         </div>
         <div class="field-group settings-full">
-          <label class="field-label">Description</label>
+          <label class="field-label">Short Description <span style="color:var(--muted);font-size:.6rem;text-transform:none;letter-spacing:0">(shown on product cards)</span></label>
+          <input class="field-input" id="prod-short-desc" placeholder="e.g. Relaxed linen blend, effortless all day.">
+        </div>
+        <div class="field-group settings-full">
+          <label class="field-label">Full Description</label>
           <textarea class="field-input" id="prod-desc" rows="3" style="resize:vertical;"></textarea>
         </div>
 
@@ -1780,6 +1784,7 @@ function openProductModal(id) {
   setVal('prod-threshold', p?.low_stock_threshold ?? 3)
   setVal('prod-visible',   p ? String(p.is_visible !== false) : 'true')
   setVal('prod-status',    p ? String(p.in_stock   !== false) : 'true')
+  setVal('prod-short-desc', p?.short_description || '')
   setVal('prod-desc',      p?.description || '')
   setVal('prod-weight',    p?.weight_g   || '')
   setVal('prod-length',    p?.length_cm  || '')
@@ -1883,6 +1888,7 @@ async function saveProduct() {
     low_stock_threshold: parseInt(getVal('prod-threshold')) || 3,
     is_visible:          getVal('prod-visible') === 'true',
     in_stock:            getVal('prod-status')  === 'true',
+    short_description:   getVal('prod-short-desc'),
     description:         getVal('prod-desc'),
     weight_g:            parseInt(getVal('prod-weight'))  || 0,
     length_cm:           parseFloat(getVal('prod-length')) || 0,

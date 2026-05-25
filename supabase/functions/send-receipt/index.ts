@@ -44,7 +44,7 @@ function buildItemsHTML(items: any[] = []) {
         × ${item.qty || item.quantity || 1}
       </td>
       <td style="padding:10px 0;border-bottom:1px solid #eae8e4;font-family:'Tenor Sans',Georgia,serif;font-size:13px;color:#000;text-align:right;">
-        ${fmtMYR((item.price || 0) * (item.qty || item.quantity || 1))}
+        ${fmtMYR((item.unit_price || item.price || 0) * (item.qty || item.quantity || 1))}
       </td>
     </tr>
   `).join("")

@@ -33,7 +33,7 @@ window.KADH_CONFIG = {
 
   // ─── Hero section (landing page) ──────────────────────────
   hero: {
-    eyebrow:    'New Collection — Raya 2025',
+    eyebrow:    'New Collection — 2026',
     titleLine1: 'Dressed in',
     titleLine2: 'quiet elegance',
     subtitle:   'Abayas crafted for the modern Muslim woman — modest, refined, and made to move with you.',
@@ -47,7 +47,7 @@ window.KADH_CONFIG = {
     tagline:       'Modest fashion, thoughtfully made.',
     address:       'Kuala Lumpur, Malaysia',
     contactEmail:  'hello@kadhcollective.com',
-    copyrightYear: 2024,
+    copyrightYear: 2026,
   },
 
   // ─── Social links ─ leave empty string '' to hide ─────────
